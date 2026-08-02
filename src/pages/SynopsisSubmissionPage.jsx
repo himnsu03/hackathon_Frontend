@@ -9,7 +9,7 @@ import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { TextArea } from '../components/common/TextArea';
 import { CountdownTimer } from '../components/common/CountdownTimer';
-import { FileText, Send, CheckCircle2, Loader2, ArrowLeft, Lightbulb, Check } from 'lucide-react';
+import { FileText, Send, CheckCircle2, Loader2, ArrowLeft, Lightbulb, Check, RefreshCw } from 'lucide-react';
 
 export const SynopsisSubmissionPage = () => {
   const navigate = useNavigate();
@@ -22,6 +22,7 @@ export const SynopsisSubmissionPage = () => {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
 
   const MIN_CHARS = 200;
@@ -44,7 +45,7 @@ export const SynopsisSubmissionPage = () => {
           setSelectedProblemId(data.problemStatementRef);
         }
       } catch {
-        toast.error('Failed to load synopsis workspace.');
+        // No prior submission, default state
       } finally {
         setLoading(false);
       }
@@ -69,9 +70,10 @@ export const SynopsisSubmissionPage = () => {
         problemStatementRef: selectedProblemId || 'PS-SMART-CITY-01',
         content,
       });
-      toast.success(res.message || 'Synopsis submitted successfully!');
+      toast.success(res.message || `Synopsis proposal for ${selectedProblemId} submitted successfully!`);
       
       updateUser({ synopsisStatus: 'PENDING' });
+      setIsEditing(false);
 
       setTimeout(() => {
         navigate('/dashboard');
@@ -94,7 +96,7 @@ export const SynopsisSubmissionPage = () => {
     );
   }
 
-  const isSubmitted = synopsisData?.submitted;
+  const isSubmitted = synopsisData?.submitted && !isEditing;
   const status = synopsisData?.status || 'NOT_SUBMITTED';
 
   return (
@@ -107,9 +109,9 @@ export const SynopsisSubmissionPage = () => {
           </Button>
         </Link>
 
-        {!isSubmitted && synopsisData?.deadline && (
+        {synopsisData?.deadline && (
           <div className="flex items-center gap-3 bg-amber-950/40 border border-amber-500/40 px-4 py-2 rounded-xl text-amber-300">
-            <span className="text-xs font-semibold">Synopsis Deadline:</span>
+            <span className="text-xs font-semibold">Synopsis Window:</span>
             <CountdownTimer targetDate={synopsisData.deadline} urgentThresholdHours={24} />
           </div>
         )}
@@ -124,9 +126,21 @@ export const SynopsisSubmissionPage = () => {
         <div className="space-y-6">
           {/* Select Problem Statement */}
           <div className="space-y-3">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-              <Lightbulb className="w-4 h-4 text-amber-400" /> Select Organizer Problem Statement
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <Lightbulb className="w-4 h-4 text-amber-400" /> Select Problem Statement Track
+              </label>
+
+              {isSubmitted && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Change Problem / Edit Proposal
+                </button>
+              )}
+            </div>
 
             {isSubmitted ? (
               <div className="p-4 bg-gradient-to-r from-slate-950 to-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-1">
@@ -166,7 +180,7 @@ export const SynopsisSubmissionPage = () => {
           </div>
 
           {isSubmitted ? (
-            /* Read-Only Mode */
+            /* Read-Only Mode with Edit Button */
             <div className="space-y-4 pt-2">
               <div className="flex items-center justify-between p-3 bg-slate-900/80 border border-slate-800 rounded-xl text-xs">
                 <span className="text-slate-400">
@@ -182,25 +196,34 @@ export const SynopsisSubmissionPage = () => {
 
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-2">
-                  Submitted Proposal Content
+                  Submitted Proposal Content ({selectedProblemId})
                 </label>
                 <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl text-sm text-slate-200 whitespace-pre-wrap leading-relaxed font-sans min-h-[160px]">
                   {synopsisData?.synopsisContent}
                 </div>
               </div>
 
-              <div className="p-4 bg-emerald-950/30 border border-emerald-500/20 text-emerald-300 rounded-xl text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                <span>
-                  Your synopsis has been recorded and locked. Our evaluation committee is currently reviewing submissions.
-                </span>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-emerald-950/30 border border-emerald-500/20 text-emerald-300 rounded-xl text-xs">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <span>Your proposal is recorded. You can edit your text or switch problem statements anytime.</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={RefreshCw}
+                  onClick={() => setIsEditing(true)}
+                  className="shrink-0"
+                >
+                  Switch Track / Edit Proposal
+                </Button>
               </div>
             </div>
           ) : (
             /* Editable Form Mode */
             <form onSubmit={handleSubmit} className="space-y-6">
               <TextArea
-                label="Technical Approach & Architecture Synopsis"
+                label={`Technical Approach Synopsis for Track: ${selectedProblemId}`}
                 placeholder="Describe your solution architecture, tech stack components, key algorithms, database design, and how you will solve edge cases (minimum 200 characters)..."
                 rows={8}
                 value={content}
@@ -212,23 +235,36 @@ export const SynopsisSubmissionPage = () => {
               />
 
               <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-1 text-xs text-slate-400">
-                <h5 className="font-semibold text-slate-300">Submission Note:</h5>
+                <h5 className="font-semibold text-slate-300 font-mono text-indigo-400">Selected Challenge: {selectedProblem?.title} ({selectedProblemId})</h5>
                 <p>
-                  Once submitted, your synopsis will enter <strong>Pending Review</strong> state. Make sure to detail your engineering approach clearly.
+                  Submitting will record your proposal under <strong>{selectedProblemId}</strong> for organizer review. You can update or switch problem statements anytime.
                 </p>
               </div>
 
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                fullWidth
-                loading={submitting}
-                disabled={content.length < MIN_CHARS}
-                icon={Send}
-              >
-                Submit Synopsis For Evaluation
-              </Button>
+              <div className="flex items-center gap-3">
+                {synopsisData?.submitted && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="lg"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    Cancel Editing
+                  </Button>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  loading={submitting}
+                  disabled={content.length < MIN_CHARS}
+                  icon={Send}
+                >
+                  {synopsisData?.submitted ? 'Update Synopsis & Save Track' : 'Submit Synopsis For Evaluation'}
+                </Button>
+              </div>
             </form>
           )}
         </div>
