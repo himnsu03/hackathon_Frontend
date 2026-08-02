@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { synopsisApi } from '../services/synopsisApi';
+import { problemStatementService } from '../services/problemStatementService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
@@ -8,7 +9,7 @@ import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { TextArea } from '../components/common/TextArea';
 import { CountdownTimer } from '../components/common/CountdownTimer';
-import { FileText, Send, CheckCircle2, AlertTriangle, Loader2, ArrowLeft, Lightbulb } from 'lucide-react';
+import { FileText, Send, CheckCircle2, Loader2, ArrowLeft, Lightbulb, Check } from 'lucide-react';
 
 export const SynopsisSubmissionPage = () => {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ export const SynopsisSubmissionPage = () => {
   const toast = useToast();
 
   const [synopsisData, setSynopsisData] = useState(null);
+  const [problemStatements, setProblemStatements] = useState([]);
+  const [selectedProblemId, setSelectedProblemId] = useState('');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -26,13 +29,22 @@ export const SynopsisSubmissionPage = () => {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
+        const statements = problemStatementService.getStatements();
+        setProblemStatements(statements);
+        if (statements.length > 0) {
+          setSelectedProblemId(statements[0].id);
+        }
+
         const data = await synopsisApi.getStatus();
         setSynopsisData(data);
         if (data.synopsisContent) {
           setContent(data.synopsisContent);
         }
+        if (data.problemStatementRef) {
+          setSelectedProblemId(data.problemStatementRef);
+        }
       } catch {
-        toast.error('Failed to load synopsis status.');
+        toast.error('Failed to load synopsis workspace.');
       } finally {
         setLoading(false);
       }
@@ -40,6 +52,8 @@ export const SynopsisSubmissionPage = () => {
 
     fetchStatus();
   }, []);
+
+  const selectedProblem = problemStatements.find((p) => p.id === selectedProblemId) || problemStatements[0];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,13 +65,14 @@ export const SynopsisSubmissionPage = () => {
     setError('');
     setSubmitting(true);
     try {
-      const res = await synopsisApi.submitSynopsis({ content });
+      const res = await synopsisApi.submitSynopsis({
+        problemStatementRef: selectedProblemId || 'PS-SMART-CITY-01',
+        content,
+      });
       toast.success(res.message || 'Synopsis submitted successfully!');
       
-      // Update local auth context synopsis status
       updateUser({ synopsisStatus: 'PENDING' });
 
-      // Short delay before redirecting to dashboard
       setTimeout(() => {
         navigate('/dashboard');
       }, 1500);
@@ -103,18 +118,51 @@ export const SynopsisSubmissionPage = () => {
       {/* Main Synopsis Card */}
       <Card
         title="Hackathon Synopsis Proposal"
-        subtitle="Outline your technical architecture and proposed solution"
+        subtitle="Select an organizer problem statement & outline your technical architecture"
         headerAction={<Badge status={status} />}
       >
         <div className="space-y-6">
-          {/* Problem Statement Teaser */}
-          <div className="p-5 bg-gradient-to-r from-slate-950 to-indigo-950/40 border border-indigo-500/30 rounded-2xl space-y-2">
-            <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Lightbulb className="w-4 h-4 text-amber-400" /> Challenge Track Problem Statement
-            </span>
-            <p className="text-sm text-slate-100 font-medium leading-relaxed">
-              {synopsisData?.problemStatement}
-            </p>
+          {/* Select Problem Statement */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <Lightbulb className="w-4 h-4 text-amber-400" /> Select Organizer Problem Statement
+            </label>
+
+            {isSubmitted ? (
+              <div className="p-4 bg-gradient-to-r from-slate-950 to-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-1">
+                <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase">{selectedProblem?.id}</span>
+                <h4 className="text-sm font-bold text-slate-100">{selectedProblem?.title || 'Smart Waste Management'}</h4>
+                <p className="text-xs text-slate-300">{selectedProblem?.description}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {problemStatements.map((ps) => {
+                  const isSelected = selectedProblemId === ps.id;
+                  return (
+                    <button
+                      key={ps.id}
+                      type="button"
+                      onClick={() => setSelectedProblemId(ps.id)}
+                      className={`p-4 rounded-xl border text-left transition-all relative ${
+                        isSelected
+                          ? 'bg-indigo-950/60 border-indigo-500 text-slate-100 ring-2 ring-indigo-500/40 shadow-lg'
+                          : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      {isSelected && (
+                        <span className="absolute top-3 right-3 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center text-slate-950">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </span>
+                      )}
+                      <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase block">{ps.id}</span>
+                      <h4 className="text-xs font-bold text-slate-100 mt-0.5">{ps.title}</h4>
+                      <span className="text-[10px] text-slate-500 block mb-1 font-mono">{ps.category}</span>
+                      <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{ps.description}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {isSubmitted ? (

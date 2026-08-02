@@ -1,36 +1,31 @@
 import { httpClient } from './httpClient';
-import { getMockStore, saveMockStore } from './mockData';
 
 export const synopsisApi = {
   /**
-   * Get Synopsis submission status
+   * Get Synopsis submission status from backend
    */
   async getStatus() {
     try {
       const response = await httpClient.get('/synopsis/status');
-      return response.data;
+      const data = response.data;
+      return {
+        submitted: Boolean(data && data.content),
+        status: data?.status || 'NOT_SUBMITTED',
+        synopsisContent: data?.content || null,
+        submittedAt: data?.submittedAt || null,
+        problemStatementRef: data?.problemStatementRef || 'PS-SMART-CITY-01',
+        problemStatement: 'Provide an effective solution for smart waste management, traffic optimization, or city logistics.',
+      };
     } catch (err) {
-      if (err.code === 'ERR_NETWORK' || (err.response && err.response.status === 404)) {
-        // Mock fallback
-        const store = getMockStore();
-        const token = localStorage.getItem('auth_token');
-        let user = store.users[0];
-
-        if (token) {
-          const match = token.match(/jwt_mock_token_([^_]+)_/);
-          if (match) {
-            const found = store.users.find(u => u.id === match[1]);
-            if (found) user = found;
-          }
-        }
-
+      // 404 status from backend indicates no synopsis submitted yet
+      if (err.response && err.response.status === 404) {
         return {
-          submitted: user.synopsisStatus !== 'NOT_SUBMITTED',
-          status: user.synopsisStatus,
-          synopsisContent: user.synopsisContent || null,
-          submittedAt: user.synopsisSubmittedAt || null,
-          deadline: '2026-08-12T18:00:00Z',
-          problemStatement: 'Provide an effective solution for smart traffic management or parking lot space optimization using computer vision or real-time IoT sensors.',
+          submitted: false,
+          status: 'NOT_SUBMITTED',
+          synopsisContent: null,
+          submittedAt: null,
+          problemStatementRef: 'PS-SMART-CITY-01',
+          problemStatement: 'Provide an effective solution for smart waste management, traffic optimization, or city logistics.',
         };
       }
       throw err;
@@ -38,45 +33,15 @@ export const synopsisApi = {
   },
 
   /**
-   * Submit Synopsis
-   * @param {Object} data - { content }
+   * Submit Synopsis to backend
+   * @param {Object} data - { content, problemStatementRef }
    */
   async submitSynopsis(data) {
-    try {
-      const response = await httpClient.post('/synopsis/submit', data);
-      return response.data;
-    } catch (err) {
-      if (err.code === 'ERR_NETWORK' || (err.response && err.response.status === 404)) {
-        // Mock fallback
-        const store = getMockStore();
-        const token = localStorage.getItem('auth_token');
-        let user = store.users[0];
-
-        if (token) {
-          const match = token.match(/jwt_mock_token_([^_]+)_/);
-          if (match) {
-            const found = store.users.find(u => u.id === match[1]);
-            if (found) user = found;
-          }
-        }
-
-        if (user.synopsisStatus !== 'NOT_SUBMITTED') {
-          throw { response: { data: { message: 'Synopsis has already been submitted for this account.' } } };
-        }
-
-        user.synopsisStatus = 'PENDING';
-        user.synopsisContent = data.content;
-        user.synopsisSubmittedAt = new Date().toISOString();
-        saveMockStore(store);
-
-        return {
-          success: true,
-          message: 'Synopsis submitted successfully! Your application is now under review.',
-          submittedAt: user.synopsisSubmittedAt,
-          status: 'PENDING',
-        };
-      }
-      throw err;
-    }
+    const payload = {
+      problemStatementRef: data.problemStatementRef || 'PS-SMART-CITY-01',
+      content: typeof data === 'string' ? data : data.content,
+    };
+    const response = await httpClient.post('/synopsis/submit', payload);
+    return response.data;
   },
 };

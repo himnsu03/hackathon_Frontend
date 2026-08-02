@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authApi } from '../services/authApi';
 import { useAuth } from '../context/AuthContext';
@@ -6,7 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Input } from '../components/common/Input';
 import { Button } from '../components/common/Button';
-import { Mail, KeyRound, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ShieldCheck, UserCheck } from 'lucide-react';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -14,43 +14,40 @@ export const LoginPage = () => {
   const { login } = useAuth();
   const toast = useToast();
 
-  const [step, setStep] = useState(1); // 1: Email Request, 2: OTP Entry
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [demoNotice, setDemoNotice] = useState('');
 
-  // 30s Cooldown timer for resend
-  const [cooldown, setCooldown] = useState(0);
-
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const timer = setInterval(() => {
-      setCooldown((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [cooldown]);
-
-  const handleRequestOtp = async (e) => {
-    e?.preventDefault();
+  const handleLogin = async (e) => {
+    e.preventDefault();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address');
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password.');
       return;
     }
 
     setError('');
     setLoading(true);
     try {
-      const res = await authApi.requestOtp(email);
-      toast.success(res.message || `OTP sent to ${email}`);
-      if (res.demoOtp) {
-        setDemoNotice(`Demo OTP: ${res.demoOtp}`);
+      const res = await authApi.login(email.trim(), password);
+      
+      // Save session
+      login(res.token, res.user);
+      toast.success(`Welcome back, ${res.user.fullName}!`);
+
+      // Automatic Role-based Navigation
+      if (res.user.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        const from = location.state?.from?.pathname || '/dashboard';
+        navigate(from, { replace: true });
       }
-      setStep(2);
-      setCooldown(30); // 30s cooldown
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to send OTP. Please try again.';
+      const msg = err.response?.data?.message || 'Login failed. Invalid email or password.';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -58,28 +55,13 @@ export const LoginPage = () => {
     }
   };
 
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    if (!otp || otp.length < 6) {
-      setError('Please enter the 6-digit verification code');
-      return;
-    }
-
-    setError('');
-    setLoading(true);
-    try {
-      const res = await authApi.login(email, otp);
-      login(res.token, res.user);
-      toast.success('Successfully authenticated!');
-
-      const from = location.state?.from?.pathname || '/dashboard';
-      navigate(from, { replace: true });
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Invalid OTP code. Please try again.';
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setLoading(false);
+  const setDemoCredentials = (role) => {
+    if (role === 'admin') {
+      setEmail('admin@hackathon.com');
+      setPassword('Admin@123');
+    } else {
+      setEmail('alex@example.com');
+      setPassword('password123');
     }
   };
 
@@ -87,108 +69,74 @@ export const LoginPage = () => {
     <div className="min-h-[85vh] py-12 px-4 flex flex-col items-center justify-center">
       {/* Brand Heading */}
       <div className="text-center max-w-sm mb-6">
-        <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">Candidate Portal</h1>
-        <p className="text-xs text-slate-400 mt-1">Access your hackathon dashboard and submissions.</p>
+        <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">Hackathon Portal</h1>
+        <p className="text-xs text-slate-400 mt-1">Access candidate workspace or organizer admin console.</p>
       </div>
 
       <Card className="max-w-md w-full">
-        {step === 1 ? (
-          /* Step 1: Request OTP */
-          <form onSubmit={handleRequestOtp} className="space-y-5">
-            <div className="text-center mb-2">
-              <div className="w-12 h-12 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <Mail className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-100">Step 1 — Request OTP</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Enter your registered email to receive a login code</p>
-            </div>
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div className="text-center mb-1">
+            <h3 className="text-xl font-bold text-slate-100">Sign In to Your Account</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Enter your account email and password below
+            </p>
+          </div>
 
-            <Input
-              label="Email Address"
-              type="email"
-              icon={Mail}
-              placeholder="alex@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={error}
-              required
-            />
+          <Input
+            label="Email Address"
+            type="email"
+            icon={Mail}
+            placeholder="user@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={error}
+            required
+          />
 
-            <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} icon={ArrowRight}>
-              Send Verification OTP
-            </Button>
+          <Input
+            label="Password"
+            type="password"
+            icon={Lock}
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
-            <div className="pt-2 text-center text-xs text-slate-400">
-              New candidate?{' '}
-              <Link to="/register" className="text-indigo-400 font-semibold hover:underline">
-                Register here
-              </Link>
-            </div>
-          </form>
-        ) : (
-          /* Step 2: Enter & Verify OTP */
-          <form onSubmit={handleVerifyOtp} className="space-y-5">
-            <div className="text-center mb-2">
-              <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-2">
-                <KeyRound className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-100">Step 2 — Enter 6-Digit Code</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Sent to <strong className="text-indigo-400">{email}</strong>{' '}
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="text-xs text-slate-500 underline hover:text-slate-300 ml-1"
-                >
-                  (Change)
-                </button>
-              </p>
-            </div>
+          <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} icon={ArrowRight}>
+            Log In
+          </Button>
 
-            {demoNotice && (
-              <div className="p-3 bg-indigo-950/60 border border-indigo-500/40 rounded-xl text-center text-xs text-indigo-300 font-mono">
-                {demoNotice}
-              </div>
-            )}
-
-            <Input
-              label="6-Digit OTP Code"
-              type="text"
-              icon={ShieldCheck}
-              placeholder="123456"
-              maxLength={6}
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-              error={error}
-              required
-              className="text-center tracking-[0.5em] font-mono text-lg font-bold"
-            />
-
-            <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
-              Verify & Login to Dashboard
-            </Button>
-
-            <div className="flex items-center justify-between text-xs pt-2">
+          {/* Quick Demo Credentials */}
+          <div className="pt-2 p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1.5 text-center">
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
+              Quick Demo Fill:
+            </span>
+            <div className="flex items-center justify-center gap-2">
               <button
                 type="button"
-                disabled={cooldown > 0 || loading}
-                onClick={handleRequestOtp}
-                className="text-indigo-400 hover:text-indigo-300 disabled:text-slate-600 font-semibold flex items-center gap-1.5"
+                onClick={() => setDemoCredentials('candidate')}
+                className="text-[11px] px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/20 font-mono flex items-center gap-1"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${cooldown > 0 ? 'animate-spin' : ''}`} />
-                {cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}
+                <UserCheck className="w-3 h-3" /> Candidate Demo
               </button>
-
               <button
                 type="button"
-                onClick={() => setStep(1)}
-                className="text-slate-400 hover:text-slate-200"
+                onClick={() => setDemoCredentials('admin')}
+                className="text-[11px] px-3 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 font-mono flex items-center gap-1"
               >
-                Use different email
+                <ShieldCheck className="w-3 h-3" /> Admin Demo
               </button>
             </div>
-          </form>
-        )}
+          </div>
+
+          <div className="text-center text-xs text-slate-400 pt-1">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-indigo-400 font-semibold hover:underline">
+              Register here
+            </Link>
+          </div>
+        </form>
       </Card>
     </div>
   );

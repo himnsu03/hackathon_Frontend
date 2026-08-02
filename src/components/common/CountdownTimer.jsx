@@ -3,13 +3,18 @@ import { Timer } from 'lucide-react';
 
 export const CountdownTimer = ({
   targetDate, // ISO string or timestamp
-  secondsLeft: initialSeconds, // directly supplied seconds
+  secondsLeft: initialSecondsLeft, // directly supplied seconds
+  remainingSeconds, // prop passed by MainHackathonPage
   onExpire,
   size = 'md', // sm | md | lg
   urgentThresholdHours = 24,
 }) => {
+  const suppliedSeconds = remainingSeconds !== undefined ? remainingSeconds : initialSecondsLeft;
+
   const [seconds, setSeconds] = useState(() => {
-    if (typeof initialSeconds === 'number') return initialSeconds;
+    if (typeof suppliedSeconds === 'number' && suppliedSeconds >= 0) {
+      return suppliedSeconds;
+    }
     if (targetDate) {
       const diff = Math.floor((new Date(targetDate).getTime() - Date.now()) / 1000);
       return diff > 0 ? diff : 0;
@@ -18,10 +23,10 @@ export const CountdownTimer = ({
   });
 
   useEffect(() => {
-    if (typeof initialSeconds === 'number') {
-      setSeconds(initialSeconds);
+    if (typeof suppliedSeconds === 'number' && suppliedSeconds >= 0) {
+      setSeconds(suppliedSeconds);
     }
-  }, [initialSeconds]);
+  }, [suppliedSeconds]);
 
   useEffect(() => {
     if (seconds <= 0) {
@@ -92,7 +97,7 @@ export const CountdownTimer = ({
     }`}>
       <Timer className="w-3.5 h-3.5" />
       <span>
-        {isExpired ? 'LOCKED' : `${days > 0 ? `${days}d ` : ''}${pad(hours)}:${pad(minutes)}:${pad(secs)}`}
+        {isExpired ? '00:00:00 (EXPIRED)' : `${days > 0 ? `${days}d ` : ''}${pad(hours)}:${pad(minutes)}:${pad(secs)}`}
       </span>
     </div>
   );

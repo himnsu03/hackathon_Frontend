@@ -14,19 +14,29 @@ export const Navbar = () => {
     navigate('/login');
   };
 
-  const navItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, protected: true },
-    { label: 'Synopsis', path: '/synopsis', icon: FileText, protected: true },
-    { label: 'Hackathon', path: '/hackathon', icon: Terminal, protected: true, badge: user?.synopsisStatus === 'SHORTLISTED' ? 'Live' : null },
-    { label: 'Results', path: '/results', icon: Trophy, protected: false },
-    { label: 'Admin Panel', path: '/admin', icon: ShieldCheck, protected: false },
+  const isAdmin = user?.role === 'admin';
+
+  // Filter navigation items based on user role & authentication
+  const allNavItems = [
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, role: 'candidate' },
+    { label: 'Synopsis', path: '/synopsis', icon: FileText, role: 'candidate' },
+    { label: 'Hackathon', path: '/hackathon', icon: Terminal, role: 'candidate', badge: user?.synopsisStatus === 'SHORTLISTED' ? 'Live' : null },
+    { label: 'Admin Panel', path: '/admin', icon: ShieldCheck, role: 'admin' },
+    { label: 'Results', path: '/results', icon: Trophy, role: 'public' },
   ];
+
+  const visibleNavItems = allNavItems.filter((item) => {
+    if (item.role === 'public') return true;
+    if (!isAuthenticated) return false;
+    if (isAdmin) return item.role === 'admin';
+    return item.role === 'candidate';
+  });
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
+        <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-3 group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 p-0.5 shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
             <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
               <Code2 className="w-5 h-5 text-indigo-400" />
@@ -37,14 +47,14 @@ export const Navbar = () => {
               Xathon<span className="text-indigo-400">Portal</span>
             </span>
             <span className="block text-[10px] font-mono tracking-widest text-slate-500 uppercase">
-              StackHack 2.0
+              {isAdmin ? 'Admin Console' : 'StackHack 2.0'}
             </span>
           </div>
         </Link>
 
         {/* Nav Links */}
         <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1.5 rounded-xl border border-slate-800/60">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             const Icon = item.icon;
 
@@ -76,7 +86,9 @@ export const Navbar = () => {
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-xs font-semibold text-slate-200">{user?.fullName}</span>
-                <span className="text-[10px] font-mono text-indigo-400">{user?.submissionId || user?.email}</span>
+                <span className="text-[10px] font-mono text-indigo-400">
+                  {isAdmin ? 'ADMINISTRATOR' : (user?.submissionId || user?.email)}
+                </span>
               </div>
               <Button variant="ghost" size="sm" onClick={handleLogout} icon={LogOut} title="Log out">
                 <span className="hidden sm:inline">Logout</span>

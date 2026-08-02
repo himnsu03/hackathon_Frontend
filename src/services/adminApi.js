@@ -1,94 +1,127 @@
 import { httpClient } from './httpClient';
-import { getMockStore, saveMockStore } from './mockData';
 
 export const adminApi = {
   /**
-   * Get all candidate synopsis submissions
-   * @param {string} filterStatus - ALL | PENDING | SHORTLISTED | REJECTED | NOT_SUBMITTED
+   * Get candidate synopsis submissions from backend
+   * @param {string} filterStatus - PENDING | SHORTLISTED | REJECTED | ALL
    */
-  async getAllSynopses(filterStatus = 'ALL') {
-    try {
-      const response = await httpClient.get('/admin/synopsis', { params: { status: filterStatus } });
-      return response.data;
-    } catch (err) {
-      if (err.code === 'ERR_NETWORK' || (err.response && err.response.status === 404)) {
-        // Mock fallback
-        const store = getMockStore();
-        let list = store.users.map(u => ({
-          id: u.id,
-          fullName: u.fullName,
-          email: u.email,
-          submissionId: u.submissionId || 'SUB-2026-9900',
-          synopsisStatus: u.synopsisStatus || 'NOT_SUBMITTED',
-          synopsisContent: u.synopsisContent || null,
-          submittedAt: u.synopsisSubmittedAt || null,
-          college: u.college,
-        }));
+  async getAllSynopses(filterStatus = 'PENDING') {
+    if (filterStatus === 'ALL') {
+      try {
+        const [pendingRes, shortlistedRes, rejectedRes] = await Promise.allSettled([
+          httpClient.get('/admin/synopsis', { params: { status: 'PENDING', size: 100 } }),
+          httpClient.get('/admin/synopsis', { params: { status: 'SHORTLISTED', size: 100 } }),
+          httpClient.get('/admin/synopsis', { params: { status: 'REJECTED', size: 100 } }),
+        ]);
 
-        if (filterStatus && filterStatus !== 'ALL') {
-          list = list.filter(item => item.synopsisStatus === filterStatus);
-        }
+        const combined = [];
+        if (pendingRes.status === 'fulfilled') combined.push(...(pendingRes.value.data?.content || []));
+        if (shortlistedRes.status === 'fulfilled') combined.push(...(shortlistedRes.value.data?.content || []));
+        if (rejectedRes.status === 'fulfilled') combined.push(...(rejectedRes.value.data?.content || []));
 
-        return { synopses: list };
+        return { synopses: mapSynopsisList(combined) };
+      } catch {
+        const res = await httpClient.get('/admin/synopsis', { params: { status: 'PENDING', size: 100 } });
+        return { synopses: mapSynopsisList(res.data?.content || []) };
       }
-      throw err;
+    }
+
+    const validStatus = ['PENDING', 'SHORTLISTED', 'REJECTED'].includes(filterStatus) ? filterStatus : 'PENDING';
+    const response = await httpClient.get('/admin/synopsis', { params: { status: validStatus, size: 100 } });
+    const content = response.data?.content || response.data?.items || response.data || [];
+    return { synopses: mapSynopsisList(content) };
+  },
+
+  /**
+   * Get all final project submissions (GitHub Repo & Live Demo URLs)
+   */
+  async getProjectSubmissions() {
+    try {
+      const response = await httpClient.get('/admin/synopsis/projects');
+      return response.data || [];
+    } catch {
+      return [];
     }
   },
 
   /**
-   * Update synopsis status (Shortlist or Reject)
-   * @param {string} candidateId
-   * @param {string} status - SHORTLISTED | REJECTED
+   * Shortlist candidate synopsis
+   * @param {string} synopsisId
    */
-  async updateSynopsisStatus(candidateId, status) {
-    try {
-      const response = await httpClient.patch(`/admin/synopsis/${candidateId}`, { status });
-      return response.data;
-    } catch (err) {
-      if (err.code === 'ERR_NETWORK' || (err.response && err.response.status === 404)) {
-        // Mock fallback
-        const store = getMockStore();
-        const user = store.users.find(u => u.id === candidateId);
-        if (user) {
-          user.synopsisStatus = status;
-          saveMockStore(store);
-          return { success: true, message: `Synopsis status updated to ${status}` };
-        }
-        throw { response: { data: { message: 'Candidate not found.' } } };
-      }
-      throw err;
+  async shortlistSynopsis(synopsisId) {
+    const response = await httpClient.post(`/admin/synopsis/${synopsisId}/shortlist`);
+    return response.data;
+  },
+
+  /**
+   * Reject candidate synopsis
+   * @param {string} synopsisId
+   */
+  async rejectSynopsis(synopsisId) {
+    const response = await httpClient.post(`/admin/synopsis/${synopsisId}/reject`);
+    return response.data;
+  },
+
+  /**
+   * Update synopsis status wrapper
+   */
+  async updateSynopsisStatus(synopsisId, status) {
+    if (status === 'SHORTLISTED') {
+      return this.shortlistSynopsis(synopsisId);
+    } else {
+      return this.rejectSynopsis(synopsisId);
     }
   },
 
   /**
-   * Declare hackathon results
-   * @param {Array} resultsList - Array of { candidateId, position, projectTitle }
+   * Declare single result matching Spring Boot DeclareResultDto
+   */
+  async declareResult(resultData) {
+    const positionMap = {
+      '1st Place': 'FIRST',
+      '2nd Place': 'SECOND',
+      '3rd Place': 'THIRD',
+      'Consolation Winner': 'CONSOLATION',
+      FIRST: 'FIRST',
+      SECOND: 'SECOND',
+      THIRD: 'THIRD',
+      CONSOLATION: 'CONSOLATION',
+    };
+
+    const payload = {
+      submissionId: resultData.submissionId,
+      position: positionMap[resultData.position] || 'FIRST',
+    };
+
+    const response = await httpClient.post('/admin/results/declare', payload);
+    return response.data;
+  },
+
+  /**
+   * Declare multiple results
    */
   async declareResults(resultsList) {
-    try {
-      const response = await httpClient.post('/admin/results', { results: resultsList });
-      return response.data;
-    } catch (err) {
-      if (err.code === 'ERR_NETWORK' || (err.response && err.response.status === 404)) {
-        // Mock fallback
-        const store = getMockStore();
-        store.results = resultsList.map((res, index) => {
-          const user = store.users.find(u => u.id === res.candidateId) || store.users[0];
-          return {
-            id: `res_${Date.now()}_${index}`,
-            position: res.position,
-            trophy: res.position.includes('1st') ? 'gold' : res.position.includes('2nd') ? 'silver' : res.position.includes('3rd') ? 'bronze' : 'consolation',
-            name: user ? user.fullName : res.name || 'Team Hacker',
-            submissionId: user ? user.submissionId : 'SUB-2026-XXXX',
-            projectTitle: res.projectTitle || 'Innovative Solution',
-          };
-        });
-        store.resultsDeclared = true;
-        saveMockStore(store);
-
-        return { success: true, message: 'Results declared successfully and published live!' };
-      }
-      throw err;
-    }
+    const promises = resultsList.map((res) =>
+      this.declareResult({
+        submissionId: res.submissionId,
+        position: res.position,
+      })
+    );
+    await Promise.all(promises);
+    return { success: true, message: 'Results declared successfully and published live to public leaderboard!' };
   },
 };
+
+function mapSynopsisList(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map((item) => ({
+    id: item.id,
+    fullName: item.candidateName || item.name || 'Candidate',
+    email: item.email || item.candidateEmail || 'N/A',
+    submissionId: item.submissionId || 'N/A',
+    synopsisStatus: item.status || 'PENDING',
+    synopsisContent: item.content || null,
+    submittedAt: item.submittedAt || null,
+    problemStatementRef: item.problemStatementRef,
+  }));
+}

@@ -20,6 +20,8 @@ export const RegistrationPage = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
+    password: '',
+    confirmPassword: '',
     phone: '',
     gradYear: String(currentYear + 1),
     college: '',
@@ -60,6 +62,14 @@ export const RegistrationPage = () => {
       newErrors.phone = 'Phone number must be exactly 10 digits';
     }
     if (!formData.college.trim()) newErrors.college = 'College/University name is required';
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
     if (techStack.length === 0) newErrors.techStack = 'Select at least one tech stack tag';
     if (!formData.agreeRules) newErrors.agreeRules = 'You must agree to the Hackathon Rules and Code of Conduct';
 
@@ -74,15 +84,20 @@ export const RegistrationPage = () => {
     setLoading(true);
     try {
       const res = await authApi.register({
-        ...formData,
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        phone: formData.phone.trim(),
+        college: formData.college.trim(),
+        gradYear: formData.gradYear,
+        experience: formData.experience,
         techStack,
       });
 
       toast.success(res.message || 'Registration successful!');
       setSuccessState({
         email: formData.email,
-        message: res.message,
-        mockToken: res.mockVerificationToken,
+        message: res.message || 'Account created! You can now log in.',
       });
     } catch (err) {
       const msg = err.response?.data?.message || 'Registration failed. Please try again.';
@@ -99,30 +114,18 @@ export const RegistrationPage = () => {
           <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-extrabold text-slate-100">Check Your Email</h2>
+          <h2 className="text-2xl font-extrabold text-slate-100">Registration Successful!</h2>
           <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-            We have sent a verification link to <strong className="text-indigo-400">{successState.email}</strong>.
+            Your candidate account for <strong className="text-indigo-400">{successState.email}</strong> has been created.
           </p>
           <p className="text-xs text-slate-400 mt-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-            Please click the link in your inbox to verify your account before logging in.
+            You can now log into your candidate dashboard using your registered email address and password.
           </p>
-
-          {/* Quick Demo Verification Button for standalone testing */}
-          {successState.mockToken && (
-            <div className="mt-6 pt-4 border-t border-slate-800">
-              <span className="text-[11px] font-mono text-slate-500 block mb-2">[Demo Shortcut Mode]</span>
-              <Link to={`/verify?token=${successState.mockToken}`}>
-                <Button variant="outline" size="sm" fullWidth>
-                  Simulate Verification Link Click
-                </Button>
-              </Link>
-            </div>
-          )}
 
           <div className="mt-6">
             <Link to="/login">
-              <Button variant="secondary" fullWidth>
-                Return to Login
+              <Button variant="primary" size="lg" fullWidth>
+                Proceed to Login
               </Button>
             </Link>
           </div>
@@ -180,6 +183,27 @@ export const RegistrationPage = () => {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   error={errors.phone}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Password"
+                  type="password"
+                  placeholder="Create password"
+                  required
+                  value={formData.password || ''}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  error={errors.password}
+                />
+                <Input
+                  label="Confirm Password"
+                  type="password"
+                  placeholder="Confirm password"
+                  required
+                  value={formData.confirmPassword || ''}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  error={errors.confirmPassword}
                 />
               </div>
             </div>

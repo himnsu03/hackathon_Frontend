@@ -20,10 +20,17 @@ export const ProtectedRoute = ({ children, requireShortlist = false, requireAdmi
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Redirect candidate attempting to access admin route to /dashboard
   if (requireAdmin && user?.role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Redirect admin attempting to access candidate-only routes to /admin
+  if (!requireAdmin && user?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // Redirect candidate without Shortlisted status attempting to access /hackathon
   if (requireShortlist && user?.synopsisStatus !== 'SHORTLISTED') {
     return <Navigate to="/dashboard" state={{ warning: 'The hackathon environment is only accessible to candidates with Shortlisted synopses.' }} replace />;
   }

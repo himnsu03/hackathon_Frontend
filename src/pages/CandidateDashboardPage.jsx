@@ -33,10 +33,14 @@ export const CandidateDashboardPage = () => {
   const [copied, setCopied] = useState(false);
   const [expandedRule, setExpandedRule] = useState(null);
 
+  const warningShownRef = React.useRef(false);
+
   // Show redirect warning toast if user attempted to access /hackathon without shortlist
   useEffect(() => {
-    if (location.state?.warning) {
+    if (location.state?.warning && !warningShownRef.current) {
+      warningShownRef.current = true;
       toast.warning(location.state.warning);
+      window.history.replaceState({}, document.title);
     }
   }, [location.state, toast]);
 
@@ -45,11 +49,13 @@ export const CandidateDashboardPage = () => {
       try {
         const data = await candidateApi.getDashboard();
         setDashboardData(data);
-        if (data.user?.synopsisStatus && user) {
-          updateUser({ synopsisStatus: data.user.synopsisStatus, submissionId: data.user.submissionId });
+        if (data.synopsisStatus && user) {
+          updateUser({ synopsisStatus: data.synopsisStatus, submissionId: data.user.submissionId });
         }
-      } catch {
-        toast.error('Failed to load candidate dashboard data.');
+      } catch (err) {
+        console.error('[Dashboard Fetch Error]', err);
+        const detailMsg = err.response?.data?.message || err.response?.data?.error || err.message;
+        toast.error(`Failed to load candidate dashboard data: ${detailMsg}`);
       } finally {
         setLoading(false);
       }

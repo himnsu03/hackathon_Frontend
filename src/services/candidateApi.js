@@ -1,54 +1,92 @@
 import { httpClient } from './httpClient';
-import { getMockStore } from './mockData';
 
 export const candidateApi = {
   /**
-   * Get Candidate Dashboard details
+   * Get Candidate Dashboard details from backend and calculate real-time dynamic timeline
    */
   async getDashboard() {
-    try {
-      const response = await httpClient.get('/candidate/dashboard');
-      return response.data;
-    } catch (err) {
-      if (err.code === 'ERR_NETWORK' || (err.response && err.response.status === 404)) {
-        // Mock fallback
-        const store = getMockStore();
-        const token = localStorage.getItem('auth_token');
-        let user = store.users[0];
-        
-        if (token) {
-          const match = token.match(/jwt_mock_token_([^_]+)_/);
-          if (match) {
-            const found = store.users.find(u => u.id === match[1]);
-            if (found) user = found;
-          }
-        }
+    const [dashboardRes, hackathonStatusRes, resultsRes] = await Promise.allSettled([
+      httpClient.get('/candidate/dashboard'),
+      httpClient.get('/hackathon/status'),
+      httpClient.get('/results'),
+    ]);
 
-        return {
-          user: {
-            fullName: user.fullName,
-            email: user.email,
-            submissionId: user.submissionId || 'SUB-2026-9842',
-            synopsisStatus: user.synopsisStatus || 'NOT_SUBMITTED',
-            synopsisSubmittedAt: user.synopsisSubmittedAt || null,
-          },
-          teaserProblemStatement: 'Provide an effective solution for smart traffic management or parking lot space optimization using computer vision or IoT telemetry.',
-          submissionDeadline: '2026-08-12T18:00:00Z',
-          keyDates: [
-            { label: 'Registration Close', date: '2026-08-10 23:59 IST', status: 'completed' },
-            { label: 'Synopsis Deadline', date: '2026-08-12 18:00 IST', status: 'active' },
-            { label: 'Hackathon Start', date: '2026-08-15 10:00 IST', status: 'upcoming' },
-            { label: 'Submissions Lock', date: '2026-08-16 10:00 IST', status: 'upcoming' },
-            { label: 'Results Date', date: '2026-08-18 16:00 IST', status: 'upcoming' },
-          ],
-          rules: [
-            { title: 'Plagiarism & Originality', content: 'All code must be built during the hackathon window. Open-source libraries are permitted with proper attribution.' },
-            { title: 'Submission Guidelines', content: 'Submissions must include a public GitHub repository link with clear documentation and deployment URL.' },
-            { title: 'Evaluation Protocol', content: 'Judging panel reviews functionality, code architecture, UI polish, and innovation.' },
-          ],
-        };
-      }
-      throw err;
-    }
+    const data = dashboardRes.status === 'fulfilled' ? dashboardRes.value.data : {};
+    const hackathonData = hackathonStatusRes.status === 'fulfilled' ? hackathonStatusRes.value.data : {};
+    const resultsList = resultsRes.status === 'fulfilled' ? (Array.isArray(resultsRes.value.data) ? resultsRes.value.data : resultsRes.value.data?.results || []) : [];
+
+    const userObj = data.user || {};
+    const synopsisObj = data.synopsis || {};
+    const synopsisStatus = synopsisObj.status || data.hackathonStatus || 'NOT_SUBMITTED';
+
+    const isSynopsisSubmitted = Boolean(synopsisObj.submittedAt) || synopsisStatus !== 'NOT_SUBMITTED';
+    const isShortlisted = synopsisStatus === 'SHORTLISTED';
+    const isHackathonStarted = hackathonData?.status === 'IN_PROGRESS' || hackathonData?.status === 'SUBMITTED' || Boolean(hackathonData?.assignmentStartTime);
+    const isProjectSubmitted = hackathonData?.status === 'SUBMITTED';
+    const isResultsDeclared = resultsList.length > 0;
+
+    // Real-Time Dynamic Timeline Steps
+    const keyDates = [
+      {
+        label: 'Candidate Registration & Account Setup',
+        date: 'Account Verified & Active',
+        status: 'completed',
+      },
+      {
+        label: 'Synopsis Proposal Submission',
+        date: synopsisObj.submittedAt
+          ? `Submitted: ${new Date(synopsisObj.submittedAt).toLocaleString()}`
+          : isSynopsisSubmitted
+          ? 'Submitted'
+          : 'Proposal Pending Submission',
+        status: isSynopsisSubmitted ? 'completed' : 'active',
+      },
+      {
+        label: 'Synopsis Proposal Review & Shortlist',
+        date: isShortlisted
+          ? 'Shortlisted — Qualified for Hackathon'
+          : synopsisStatus === 'REJECTED'
+          ? 'Proposal Rejected'
+          : isSynopsisSubmitted
+          ? 'Under Review by Organizers'
+          : 'Awaiting Synopsis Submission',
+        status: isShortlisted ? 'completed' : isSynopsisSubmitted ? 'active' : 'upcoming',
+      },
+      {
+        label: '24-Hour Hackathon Coding Window',
+        date: hackathonData?.assignmentStartTime
+          ? `Started: ${new Date(hackathonData.assignmentStartTime).toLocaleString()}`
+          : isShortlisted
+          ? 'Ready to Start 24-Hour Timer'
+          : 'Locked — Requires Shortlisted Synopsis',
+        status: isProjectSubmitted ? 'completed' : isHackathonStarted ? 'active' : isShortlisted ? 'active' : 'upcoming',
+      },
+      {
+        label: 'Official Leaderboard & Results Declaration',
+        date: isResultsDeclared
+          ? `Results Published Live (${resultsList.length} Winners)`
+          : 'Pending Final Project Evaluation',
+        status: isResultsDeclared ? 'completed' : 'upcoming',
+      },
+    ];
+
+    return {
+      user: {
+        fullName: userObj.name || userObj.fullName,
+        email: userObj.email,
+        submissionId: userObj.submissionId || 'SUB-2026-9842',
+        synopsisStatus,
+        synopsisSubmittedAt: synopsisObj.submittedAt || null,
+      },
+      synopsisStatus,
+      eligibleToStart: Boolean(data.eligibleToStart),
+      teaserProblemStatement: 'Provide an effective solution for smart waste management, traffic optimization, AI pair programming, or city logistics.',
+      keyDates,
+      rules: [
+        { title: 'Plagiarism & Originality', content: 'All code must be built during the hackathon window. Open-source libraries are permitted with proper attribution.' },
+        { title: 'Submission Guidelines', content: 'Submissions must include a public GitHub repository link with clear documentation and live deployment URL.' },
+        { title: 'Evaluation Protocol', content: 'Judging panel reviews functionality, code architecture, UI polish, and innovation.' },
+      ],
+    };
   },
 };

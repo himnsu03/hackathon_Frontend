@@ -44,7 +44,7 @@ export const EmailVerificationPage = () => {
 
     setResendLoading(true);
     try {
-      // In mock/backend, request OTP or resend verification email
+      // Request OTP or resend verification email from backend API
       await authApi.requestOtp(resendEmail);
       toast.success(`Verification link re-sent to ${resendEmail}`);
       setResendSuccess(true);

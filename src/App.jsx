@@ -62,7 +62,14 @@ export function App() {
                 <Route path="/results" element={<ResultsPage />} />
 
                 {/* Admin Management Panel */}
-                <Route path="/admin" element={<AdminPanelPage />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute requireAdmin>
+                      <AdminPanelPage />
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* Fallback Catch-All */}
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

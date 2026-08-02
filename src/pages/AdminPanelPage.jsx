@@ -1,78 +1,219 @@
 import React, { useEffect, useState } from 'react';
 import { adminApi } from '../services/adminApi';
+import { problemStatementService } from '../services/problemStatementService';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Select } from '../components/common/Select';
 import { Input } from '../components/common/Input';
+import { TextArea } from '../components/common/TextArea';
 import { Badge } from '../components/common/Badge';
-import { ShieldCheck, CheckCircle2, XCircle, Trophy, Filter, UserCheck, Plus, Trash2, Loader2 } from 'lucide-react';
+import {
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  Trophy,
+  Filter,
+  Plus,
+  Trash2,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  RefreshCw,
+  GitBranch,
+  Globe,
+  ExternalLink,
+  AlertTriangle,
+} from 'lucide-react';
 
 export const AdminPanelPage = () => {
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState('synopsis'); // synopsis | results
+  const [activeTab, setActiveTab] = useState('synopsis'); // synopsis | projects | problems | results
 
   // Tab 1 State: Synopsis Table
   const [synopses, setSynopses] = useState([]);
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('PENDING');
   const [synopsisLoading, setSynopsisLoading] = useState(true);
+  const [expandedRow, setExpandedRow] = useState(null);
 
-  // Tab 2 State: Declare Results
-  const [resultsList, setResultsList] = useState([
-    { candidateId: 'usr_001', position: '1st Place', projectTitle: 'Smart Traffic AI Vision' },
-    { candidateId: 'usr_002', position: '2nd Place', projectTitle: 'OmniWarehouse Engine' },
-  ]);
-  const [selectedCandidate, setSelectedCandidate] = useState('');
+  // Tab 2 State: Project Submissions Table
+  const [projectSubmissions, setProjectSubmissions] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+
+  // Tab 3 State: Problem Statements Management
+  const [problemStatements, setProblemStatements] = useState([]);
+  const [newPsId, setNewPsId] = useState('');
+  const [newPsTitle, setNewPsTitle] = useState('');
+  const [newPsCategorySelect, setNewPsCategorySelect] = useState('IoT & Smart Cities');
+  const [customPsCategory, setCustomPsCategory] = useState('');
+  const [newPsDescription, setNewPsDescription] = useState('');
+
+  // Tab 4 State: Declare Results
+  const [allCandidates, setAllCandidates] = useState([]);
+  const [resultsList, setResultsList] = useState([]);
+  const [selectedCandidateId, setSelectedCandidateId] = useState('');
+  const [customSubmissionId, setCustomSubmissionId] = useState('');
   const [selectedPosition, setSelectedPosition] = useState('1st Place');
   const [projectTitle, setProjectTitle] = useState('');
   const [declaring, setDeclaring] = useState(false);
+
+  const CATEGORY_OPTIONS = [
+    'IoT & Smart Cities',
+    'Artificial Intelligence & ML',
+    'Web3 & Blockchain',
+    'CleanTech & Sustainability',
+    'FinTech & Payments',
+    'Healthcare & MedTech',
+    'Cybersecurity & Privacy',
+    'EdTech & E-Learning',
+    'AR/VR & Gaming',
+    'DevOps & Cloud Automation',
+    'Open Innovation Track',
+    'Custom Category (Type below)...',
+  ];
 
   const fetchSynopses = async (filter = statusFilter) => {
     setSynopsisLoading(true);
     try {
       const res = await adminApi.getAllSynopses(filter);
       setSynopses(res.synopses || []);
-    } catch {
-      toast.error('Failed to load synopsis submissions list.');
+    } catch (err) {
+      console.error('[Admin Panel Fetch Error]', err);
+      const statusCode = err.response?.status;
+      const detailMsg = err.response?.data?.message || err.response?.data?.error || err.message || 'Unknown network error';
+      
+      let msg = `Failed to load candidate synopsis submissions (${statusCode || 'Network'}): ${detailMsg}`;
+      if (statusCode === 403) {
+        msg = 'Access Denied (403): Your account does not have ADMIN privileges. Please re-login with admin@hackathon.com / Admin@123.';
+      }
+      toast.error(msg);
     } finally {
       setSynopsisLoading(false);
     }
   };
 
+  const fetchProjectSubmissions = async () => {
+    setProjectsLoading(true);
+    try {
+      const data = await adminApi.getProjectSubmissions();
+      setProjectSubmissions(data || []);
+    } catch (e) {
+      console.error('Error fetching project submissions:', e);
+      toast.error('Failed to load candidate project submissions.');
+    } finally {
+      setProjectsLoading(false);
+    }
+  };
+
+  const fetchAllCandidates = async () => {
+    try {
+      const res = await adminApi.getAllSynopses('ALL');
+      setAllCandidates(res.synopses || []);
+    } catch (e) {
+      console.error('Error fetching all candidates for results dropdown:', e);
+    }
+  };
+
   useEffect(() => {
     fetchSynopses(statusFilter);
+    fetchProjectSubmissions();
+    fetchAllCandidates();
+    setProblemStatements(problemStatementService.getStatements());
   }, [statusFilter]);
 
   const handleUpdateStatus = async (id, newStatus) => {
     try {
       await adminApi.updateSynopsisStatus(id, newStatus);
-      toast.success(`Updated status to ${newStatus}`);
+      toast.success(`Candidate synopsis ${newStatus.toLowerCase()} successfully!`);
       fetchSynopses();
-    } catch {
-      toast.error('Failed to update synopsis status.');
+      fetchAllCandidates();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update synopsis status.');
     }
   };
 
-  const handleAddResultItem = () => {
-    if (!selectedCandidate) {
-      toast.error('Please select a candidate to assign.');
+  const handleAddProblemStatement = (e) => {
+    e.preventDefault();
+    if (!newPsTitle.trim() || !newPsDescription.trim()) {
+      toast.error('Title and Description are required for problem statements.');
       return;
     }
-    const candidateObj = synopses.find((s) => s.id === selectedCandidate);
+
+    const finalCategory =
+      newPsCategorySelect === 'Custom Category (Type below)...'
+        ? customPsCategory.trim() || 'General Innovation'
+        : newPsCategorySelect;
+
+    const added = problemStatementService.addStatement({
+      id: newPsId.trim() || `PS-${Date.now().toString().slice(-4)}`,
+      title: newPsTitle,
+      category: finalCategory,
+      description: newPsDescription,
+    });
+
+    setProblemStatements(problemStatementService.getStatements());
+    setNewPsId('');
+    setNewPsTitle('');
+    setCustomPsCategory('');
+    setNewPsDescription('');
+    toast.success(`Problem Statement "${added.title}" added successfully!`);
+  };
+
+  const handleDeleteProblemStatement = (id) => {
+    const updated = problemStatementService.deleteStatement(id);
+    setProblemStatements(updated);
+    toast.info('Problem statement removed.');
+  };
+
+  const handleAddResultItem = () => {
+    const targetSubId = customSubmissionId.trim() || selectedCandidateId;
+    if (!targetSubId) {
+      toast.error('Please select a candidate or enter a Submission ID.');
+      return;
+    }
+
+    const candidateObj = allCandidates.find(
+      (s) => s.submissionId === targetSubId || s.id === targetSubId
+    );
+
+    const subIdToSave = candidateObj ? candidateObj.submissionId : targetSubId;
+
+    // Check 1: Is candidate ALREADY assigned to a winner position in current draft list?
+    const isAlreadyInDraft = resultsList.some(
+      (item) => item.submissionId === subIdToSave
+    );
+
+    if (isAlreadyInDraft) {
+      toast.warning(`Candidate (${subIdToSave}) is ALREADY assigned to a winner position! Duplicates are not allowed.`);
+      return;
+    }
+
+    // Check 2: Is position ALREADY assigned to another candidate in draft list?
+    const isPositionTakenInDraft = resultsList.some(
+      (item) => item.position === selectedPosition
+    );
+
+    if (isPositionTakenInDraft) {
+      toast.warning(`Position "${selectedPosition}" is ALREADY assigned to another candidate in your draft list!`);
+      return;
+    }
+
     setResultsList([
       ...resultsList,
       {
-        candidateId: selectedCandidate,
+        submissionId: subIdToSave,
         name: candidateObj ? candidateObj.fullName : 'Selected Candidate',
-        submissionId: candidateObj ? candidateObj.submissionId : 'SUB-2026-000',
         position: selectedPosition,
-        projectTitle: projectTitle.trim() || 'Hackathon Solution',
+        projectTitle: projectTitle.trim() || 'Smart Solution Proposal',
       },
     ]);
+
     setProjectTitle('');
-    setSelectedCandidate('');
-    toast.info('Added winner entry to draft list.');
+    setSelectedCandidateId('');
+    setCustomSubmissionId('');
+    toast.info(`Added entry for ${subIdToSave} (${selectedPosition}) to draft winners podium.`);
   };
 
   const handleRemoveResultItem = (index) => {
@@ -89,12 +230,17 @@ export const AdminPanelPage = () => {
     try {
       const res = await adminApi.declareResults(resultsList);
       toast.success(res.message || 'Results published live to public leaderboard!');
-    } catch {
-      toast.error('Failed to publish results.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to publish results to backend.');
     } finally {
       setDeclaring(false);
     }
   };
+
+  // Filter out candidates who are already assigned to a winner position in draft
+  const availableCandidatesForWinner = allCandidates.filter(
+    (s) => !resultsList.some((draft) => draft.submissionId === s.submissionId)
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
@@ -104,52 +250,92 @@ export const AdminPanelPage = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4" /> Organizer Admin Controls
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-100 mt-2">Hackathon Management Dashboard</h1>
+          <h1 className="text-2xl font-extrabold text-slate-100 mt-2">Hackathon Management Console</h1>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-xl border border-slate-800">
-          <button
-            onClick={() => setActiveTab('synopsis')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'synopsis'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
+        {/* Navigation Tabs & Refresh */}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={RefreshCw}
+            onClick={() => {
+              fetchSynopses();
+              fetchProjectSubmissions();
+              fetchAllCandidates();
+            }}
+            title="Refresh All Data"
           >
-            Synopsis Management
-          </button>
-          <button
-            onClick={() => setActiveTab('results')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'results'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Declare Results
-          </button>
+            Refresh
+          </Button>
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-900/80 p-1.5 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setActiveTab('synopsis')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'synopsis'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Synopsis Review
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('projects');
+                fetchProjectSubmissions();
+              }}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'projects'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Project Submissions
+            </button>
+            <button
+              onClick={() => setActiveTab('problems')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'problems'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Problem Statements
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('results');
+                fetchAllCandidates();
+              }}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'results'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Declare Results
+            </button>
+          </div>
         </div>
       </div>
 
       {activeTab === 'synopsis' ? (
-        /* Tab 1: Synopsis Table & Shortlisting */
+        /* Tab 1: Synopsis Proposals Review */
         <Card
-          title="Candidate Synopsis Submissions"
-          subtitle="Review candidate proposals and grant hackathon access"
+          title="Candidate Synopsis Proposals"
+          subtitle="Review candidate technical proposals and grant main hackathon access"
           headerAction={
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-slate-400" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none"
+                className="bg-slate-950 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none cursor-pointer"
               >
-                <option value="ALL">All Statuses</option>
                 <option value="PENDING">Pending Review</option>
                 <option value="SHORTLISTED">Shortlisted</option>
                 <option value="REJECTED">Rejected</option>
-                <option value="NOT_SUBMITTED">Not Submitted</option>
+                <option value="ALL">All Submissions</option>
               </select>
             </div>
           }
@@ -157,62 +343,187 @@ export const AdminPanelPage = () => {
           {synopsisLoading ? (
             <div className="py-12 text-center">
               <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto mb-2" />
-              <p className="text-xs text-slate-400">Loading submissions...</p>
+              <p className="text-xs text-slate-400">Fetching synopsis submissions from Spring Boot backend...</p>
             </div>
           ) : synopses.length === 0 ? (
             <div className="py-12 text-center text-xs text-slate-500">
-              No candidates found matching the selected filter ({statusFilter}).
+              No candidate synopsis submissions found for status <strong className="text-slate-300">"{statusFilter}"</strong>.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
-                    <th className="py-3 px-4">Candidate Name</th>
-                    <th className="py-3 px-4">Email</th>
+                    <th className="py-3 px-4">Candidate</th>
                     <th className="py-3 px-4">Submission ID</th>
+                    <th className="py-3 px-4">Track Ref</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Submitted At</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {synopses.map((item) => (
+                  {synopses.map((item) => {
+                    const isExpanded = expandedRow === item.id;
+                    return (
+                      <React.Fragment key={item.id}>
+                        <tr className="hover:bg-slate-900/40 transition-colors">
+                          <td className="py-3.5 px-4 font-semibold text-slate-200">
+                            <div>{item.fullName}</div>
+                            <span className="text-[10px] text-slate-500 font-mono">{item.email}</span>
+                          </td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-indigo-400">{item.submissionId}</td>
+                          <td className="py-3.5 px-4 font-mono text-slate-300">{item.problemStatementRef || 'PS-01'}</td>
+                          <td className="py-3.5 px-4">
+                            <Badge status={item.synopsisStatus} />
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-400 font-mono">
+                            {item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : 'N/A'}
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedRow(isExpanded ? null : item.id)}
+                                className="px-2.5 py-1 text-slate-300 hover:text-white bg-slate-800 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 text-[11px] font-medium"
+                                title="View proposal text"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                                Proposal
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+                              {item.synopsisStatus !== 'SHORTLISTED' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  icon={CheckCircle2}
+                                  onClick={() => handleUpdateStatus(item.id, 'SHORTLISTED')}
+                                  className="text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/10"
+                                >
+                                  Shortlist
+                                </Button>
+                              )}
+                              {item.synopsisStatus !== 'REJECTED' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  icon={XCircle}
+                                  onClick={() => handleUpdateStatus(item.id, 'REJECTED')}
+                                  className="text-rose-400 hover:bg-rose-500/10"
+                                >
+                                  Reject
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Expanded Synopsis Proposal Content */}
+                        {isExpanded && (
+                          <tr className="bg-slate-950/90 border-b border-slate-800">
+                            <td colSpan={6} className="p-4">
+                              <div className="p-4 bg-slate-900/80 border border-slate-800 rounded-xl space-y-2">
+                                <h5 className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
+                                  <FileText className="w-4 h-4" /> Technical Synopsis Proposal Description
+                                </h5>
+                                <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-sans">
+                                  {item.synopsisContent || 'No proposal text available.'}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      ) : activeTab === 'projects' ? (
+        /* Tab 2: Dedicated Final Project Submissions View */
+        <Card
+          title="Final Hackathon Project Deliverables"
+          subtitle="Inspect candidate GitHub repositories and live deployed application links"
+        >
+          {projectsLoading ? (
+            <div className="py-12 text-center">
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto mb-2" />
+              <p className="text-xs text-slate-400">Loading project repository submissions from Spring Boot...</p>
+            </div>
+          ) : projectSubmissions.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-500">
+              No final project submissions recorded yet. Once shortlisted candidates start their timer and submit their GitHub repo URLs, they will appear here.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
+                    <th className="py-3 px-4">Candidate</th>
+                    <th className="py-3 px-4">Submission ID</th>
+                    <th className="py-3 px-4">GitHub Repository</th>
+                    <th className="py-3 px-4">Live App Demo</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Submitted At</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {projectSubmissions.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-900/40 transition-colors">
-                      <td className="py-3.5 px-4 font-semibold text-slate-200">{item.fullName}</td>
-                      <td className="py-3.5 px-4 text-slate-400 font-mono">{item.email}</td>
+                      <td className="py-3.5 px-4 font-semibold text-slate-200">
+                        <div>{item.candidateName}</div>
+                        <span className="text-[10px] text-slate-500 font-mono">{item.candidateEmail}</span>
+                      </td>
                       <td className="py-3.5 px-4 font-mono font-bold text-indigo-400">{item.submissionId}</td>
                       <td className="py-3.5 px-4">
-                        <Badge status={item.synopsisStatus} />
+                        {item.githubRepoUrl ? (
+                          <a
+                            href={item.githubRepoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 hover:underline font-mono font-medium"
+                          >
+                            <GitBranch className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            <span>Repository</span>
+                            <ExternalLink className="w-3 h-3 shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-slate-500 font-mono">Not submitted</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {item.liveAppUrl ? (
+                          <a
+                            href={item.liveAppUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 hover:underline font-mono font-medium"
+                          >
+                            <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>Live App</span>
+                            <ExternalLink className="w-3 h-3 shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-slate-500 font-mono">Not submitted</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                            item.status === 'SUBMITTED'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                              : item.status === 'IN_PROGRESS'
+                              ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 animate-pulse'
+                              : 'bg-slate-800 text-slate-400'
+                          }`}
+                        >
+                          {item.status}
+                        </span>
                       </td>
                       <td className="py-3.5 px-4 text-slate-400 font-mono">
-                        {item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : 'N/A'}
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {item.synopsisStatus !== 'SHORTLISTED' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              icon={CheckCircle2}
-                              onClick={() => handleUpdateStatus(item.id, 'SHORTLISTED')}
-                              className="text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/10"
-                            >
-                              Shortlist
-                            </Button>
-                          )}
-                          {item.synopsisStatus !== 'REJECTED' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              icon={XCircle}
-                              onClick={() => handleUpdateStatus(item.id, 'REJECTED')}
-                              className="text-rose-400 hover:bg-rose-500/10"
-                            >
-                              Reject
-                            </Button>
-                          )}
-                        </div>
+                        {item.submissionTime ? new Date(item.submissionTime).toLocaleString() : 'In Progress'}
                       </td>
                     </tr>
                   ))}
@@ -221,21 +532,146 @@ export const AdminPanelPage = () => {
             </div>
           )}
         </Card>
+      ) : activeTab === 'problems' ? (
+        /* Tab 3: Problem Statements Management */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Add Problem Statement Form */}
+          <Card title="Add Problem Statement" subtitle="Publish challenge tracks for candidates">
+            <form onSubmit={handleAddProblemStatement} className="space-y-4">
+              <Input
+                label="Reference Code"
+                placeholder="e.g. PS-AI-04 (Auto-generated if empty)"
+                value={newPsId}
+                onChange={(e) => setNewPsId(e.target.value)}
+              />
+
+              <Input
+                label="Problem Title"
+                placeholder="e.g. Smart Waste Management System"
+                value={newPsTitle}
+                onChange={(e) => setNewPsTitle(e.target.value)}
+                required
+              />
+
+              <Select
+                label="Category / Track"
+                options={CATEGORY_OPTIONS}
+                value={newPsCategorySelect}
+                onChange={(e) => setNewPsCategorySelect(e.target.value)}
+              />
+
+              {newPsCategorySelect === 'Custom Category (Type below)...' && (
+                <Input
+                  label="Enter Custom Category Name"
+                  placeholder="e.g. Quantum Computing, BioTech..."
+                  value={customPsCategory}
+                  onChange={(e) => setCustomPsCategory(e.target.value)}
+                  required
+                />
+              )}
+
+              <TextArea
+                label="Problem Description & Requirements"
+                placeholder="Describe the challenge statement, core issues, and expected features..."
+                rows={5}
+                value={newPsDescription}
+                onChange={(e) => setNewPsDescription(e.target.value)}
+                required
+              />
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                fullWidth
+                icon={Plus}
+              >
+                Publish Problem Statement
+              </Button>
+            </form>
+          </Card>
+
+          {/* Active Problem Statements List */}
+          <div className="lg:col-span-2">
+            <Card
+              title="Active Problem Statements"
+              subtitle="Problem Statements currently selectable by candidates during synopsis submission"
+            >
+              {problemStatements.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-500">
+                  No problem statements published yet. Create one using the form on the left.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {problemStatements.map((ps) => (
+                    <div
+                      key={ps.id}
+                      className="p-5 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2 hover:border-slate-700 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/30">
+                              {ps.id}
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">
+                              {ps.category}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-bold text-slate-100 mt-1">{ps.title}</h3>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProblemStatement(ps.id)}
+                          className="text-slate-500 hover:text-rose-400 transition-colors p-1.5 bg-slate-900 rounded-lg"
+                          title="Delete problem statement"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <p className="text-xs text-slate-300 leading-relaxed font-sans">{ps.description}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
       ) : (
-        /* Tab 2: Declare Results Form */
+        /* Tab 4: Declare Results Form */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form Side */}
-          <Card title="Assign Winners" subtitle="Select candidate and position to declare">
+          <Card title="Assign Winners" subtitle="Select registered candidate or enter Submission ID">
             <div className="space-y-4">
               <Select
-                label="Select Candidate"
-                placeholder="Choose candidate..."
-                options={synopses.map((s) => ({
-                  value: s.id,
-                  label: `${s.fullName} (${s.submissionId})`,
+                label="Select Registered Candidate"
+                placeholder="Choose candidate from list..."
+                options={availableCandidatesForWinner.map((s) => ({
+                  value: s.submissionId,
+                  label: `${s.fullName} (${s.submissionId}) [${s.synopsisStatus}]`,
                 }))}
-                value={selectedCandidate}
-                onChange={(e) => setSelectedCandidate(e.target.value)}
+                value={selectedCandidateId}
+                onChange={(e) => {
+                  setSelectedCandidateId(e.target.value);
+                  setCustomSubmissionId('');
+                }}
+              />
+
+              <div className="relative flex items-center justify-center">
+                <div className="border-t border-slate-800 w-full" />
+                <span className="bg-slate-900 px-3 text-[10px] font-mono text-slate-500 uppercase">or enter manually</span>
+              </div>
+
+              <Input
+                label="Or Enter Submission ID Manually"
+                placeholder="e.g. HACK-2026-16835"
+                value={customSubmissionId}
+                onChange={(e) => {
+                  setCustomSubmissionId(e.target.value);
+                  setSelectedCandidateId('');
+                }}
               />
 
               <Select
@@ -246,8 +682,8 @@ export const AdminPanelPage = () => {
               />
 
               <Input
-                label="Project Title"
-                placeholder="e.g. Smart Traffic AI"
+                label="Project Title (Optional)"
+                placeholder="e.g. Smart Waste Management System"
                 value={projectTitle}
                 onChange={(e) => setProjectTitle(e.target.value)}
               />
@@ -285,7 +721,7 @@ export const AdminPanelPage = () => {
             >
               {resultsList.length === 0 ? (
                 <div className="py-8 text-center text-xs text-slate-500">
-                  No winners assigned yet. Use the form on the left to add winners.
+                  No winners assigned yet. Select a candidate from the dropdown or enter a Submission ID on the left.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -298,9 +734,9 @@ export const AdminPanelPage = () => {
                         <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30">
                           {item.position}
                         </span>
-                        <h4 className="text-sm font-bold text-slate-100 mt-1">{item.name || 'Candidate'}</h4>
+                        <h4 className="text-sm font-bold text-slate-100 mt-1">{item.name || 'Winning Candidate'}</h4>
                         <p className="text-xs text-slate-400 font-mono">
-                          {item.submissionId} • Project: "{item.projectTitle}"
+                          Submission ID: <strong className="text-indigo-400">{item.submissionId}</strong>
                         </p>
                       </div>
 
