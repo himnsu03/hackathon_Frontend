@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { candidateApi } from '../services/candidateApi';
+import { hackathonConfigService } from '../services/hackathonConfigService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
@@ -146,7 +147,7 @@ export const CandidateDashboardPage = () => {
                 <span className="text-[11px] font-bold text-slate-400 uppercase block mb-1">
                   Synopsis Deadline
                 </span>
-                <CountdownTimer targetDate={dashboardData?.submissionDeadline} />
+                <CountdownTimer targetDate={hackathonConfigService.getConfig()?.synopsisDeadline || dashboardData?.submissionDeadline} />
               </div>
             )}
           </div>

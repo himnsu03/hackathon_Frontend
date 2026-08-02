@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { adminApi } from '../services/adminApi';
 import { problemStatementService } from '../services/problemStatementService';
+import { hackathonConfigService } from '../services/hackathonConfigService';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -24,13 +25,17 @@ import {
   GitBranch,
   Globe,
   ExternalLink,
-  AlertTriangle,
+  BookOpen,
+  Calendar,
+  Clock,
+  Settings,
+  Save,
 } from 'lucide-react';
 
 export const AdminPanelPage = () => {
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState('synopsis'); // synopsis | projects | problems | results
+  const [activeTab, setActiveTab] = useState('synopsis'); // synopsis | projects | problems | config | results
 
   // Tab 1 State: Synopsis Table
   const [synopses, setSynopses] = useState([]);
@@ -49,8 +54,15 @@ export const AdminPanelPage = () => {
   const [newPsCategorySelect, setNewPsCategorySelect] = useState('IoT & Smart Cities');
   const [customPsCategory, setCustomPsCategory] = useState('');
   const [newPsDescription, setNewPsDescription] = useState('');
+  const [newPsRules, setNewPsRules] = useState('');
 
-  // Tab 4 State: Declare Results
+  // Tab 4 State: Hackathon Config & Deadlines
+  const [synopsisDeadlineInput, setSynopsisDeadlineInput] = useState('');
+  const [projectDeadlineInput, setProjectDeadlineInput] = useState('');
+  const [durationHoursInput, setDurationHoursInput] = useState(24);
+  const [savingConfig, setSavingConfig] = useState(false);
+
+  // Tab 5 State: Declare Results
   const [allCandidates, setAllCandidates] = useState([]);
   const [resultsList, setResultsList] = useState([]);
   const [selectedCandidateId, setSelectedCandidateId] = useState('');
@@ -121,6 +133,15 @@ export const AdminPanelPage = () => {
     fetchProjectSubmissions();
     fetchAllCandidates();
     setProblemStatements(problemStatementService.getStatements());
+
+    const currentConfig = hackathonConfigService.getConfig();
+    if (currentConfig.synopsisDeadline) {
+      const localDate = new Date(currentConfig.synopsisDeadline).toISOString().slice(0, 16);
+      setSynopsisDeadlineInput(localDate);
+    }
+    if (currentConfig.durationHours) {
+      setDurationHoursInput(currentConfig.durationHours);
+    }
   }, [statusFilter]);
 
   const handleUpdateStatus = async (id, newStatus) => {
@@ -151,6 +172,7 @@ export const AdminPanelPage = () => {
       title: newPsTitle,
       category: finalCategory,
       description: newPsDescription,
+      rules: newPsRules,
     });
 
     setProblemStatements(problemStatementService.getStatements());
@@ -158,13 +180,31 @@ export const AdminPanelPage = () => {
     setNewPsTitle('');
     setCustomPsCategory('');
     setNewPsDescription('');
-    toast.success(`Problem Statement "${added.title}" added successfully!`);
+    setNewPsRules('');
+    toast.success(`Problem Statement "${added.title}" published successfully!`);
   };
 
   const handleDeleteProblemStatement = (id) => {
     const updated = problemStatementService.deleteStatement(id);
     setProblemStatements(updated);
     toast.info('Problem statement removed.');
+  };
+
+  const handleSaveConfig = (e) => {
+    e.preventDefault();
+    setSavingConfig(true);
+    try {
+      hackathonConfigService.updateConfig({
+        synopsisDeadline: synopsisDeadlineInput ? new Date(synopsisDeadlineInput).toISOString() : null,
+        projectSubmissionDeadline: projectDeadlineInput ? new Date(projectDeadlineInput).toISOString() : null,
+        durationHours: Number(durationHoursInput) || 24,
+      });
+      toast.success('Hackathon Config, Deadlines & Duration updated successfully!');
+    } catch (e) {
+      toast.error('Failed to update hackathon configuration.');
+    } finally {
+      setSavingConfig(false);
+    }
   };
 
   const handleAddResultItem = () => {
@@ -180,23 +220,21 @@ export const AdminPanelPage = () => {
 
     const subIdToSave = candidateObj ? candidateObj.submissionId : targetSubId;
 
-    // Check 1: Is candidate ALREADY assigned to a winner position in current draft list?
     const isAlreadyInDraft = resultsList.some(
       (item) => item.submissionId === subIdToSave
     );
 
     if (isAlreadyInDraft) {
-      toast.warning(`Candidate (${subIdToSave}) is ALREADY assigned to a winner position! Duplicates are not allowed.`);
+      toast.warning(`Candidate (${subIdToSave}) is ALREADY assigned to a winner position!`);
       return;
     }
 
-    // Check 2: Is position ALREADY assigned to another candidate in draft list?
     const isPositionTakenInDraft = resultsList.some(
       (item) => item.position === selectedPosition
     );
 
     if (isPositionTakenInDraft) {
-      toast.warning(`Position "${selectedPosition}" is ALREADY assigned to another candidate in your draft list!`);
+      toast.warning(`Position "${selectedPosition}" is ALREADY assigned to another candidate!`);
       return;
     }
 
@@ -237,7 +275,6 @@ export const AdminPanelPage = () => {
     }
   };
 
-  // Filter out candidates who are already assigned to a winner position in draft
   const availableCandidatesForWinner = allCandidates.filter(
     (s) => !resultsList.some((draft) => draft.submissionId === s.submissionId)
   );
@@ -301,6 +338,16 @@ export const AdminPanelPage = () => {
               }`}
             >
               Problem Statements
+            </button>
+            <button
+              onClick={() => setActiveTab('config')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'config'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Deadlines & Duration
             </button>
             <button
               onClick={() => {
@@ -535,8 +582,8 @@ export const AdminPanelPage = () => {
       ) : activeTab === 'problems' ? (
         /* Tab 3: Problem Statements Management */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Add Problem Statement Form */}
-          <Card title="Add Problem Statement" subtitle="Publish challenge tracks for candidates">
+          {/* Add Problem Statement & Rules Form */}
+          <Card title="Add Problem Statement & Rules" subtitle="Publish challenge tracks and technical rules for candidates">
             <form onSubmit={handleAddProblemStatement} className="space-y-4">
               <Input
                 label="Reference Code"
@@ -571,12 +618,20 @@ export const AdminPanelPage = () => {
               )}
 
               <TextArea
-                label="Problem Description & Requirements"
-                placeholder="Describe the challenge statement, core issues, and expected features..."
-                rows={5}
+                label="Problem Description & Challenge Details"
+                placeholder="Describe the problem statement, core issues, and expected features..."
+                rows={4}
                 value={newPsDescription}
                 onChange={(e) => setNewPsDescription(e.target.value)}
                 required
+              />
+
+              <TextArea
+                label="Track Rules & Engineering Constraints"
+                placeholder="e.g. 1. Must use IoT sensor streams.\n2. Must provide architecture diagram.\n3. Open-source libraries attributed."
+                rows={4}
+                value={newPsRules}
+                onChange={(e) => setNewPsRules(e.target.value)}
               />
 
               <Button
@@ -586,7 +641,7 @@ export const AdminPanelPage = () => {
                 fullWidth
                 icon={Plus}
               >
-                Publish Problem Statement
+                Publish Problem Statement & Rules
               </Button>
             </form>
           </Card>
@@ -594,8 +649,8 @@ export const AdminPanelPage = () => {
           {/* Active Problem Statements List */}
           <div className="lg:col-span-2">
             <Card
-              title="Active Problem Statements"
-              subtitle="Problem Statements currently selectable by candidates during synopsis submission"
+              title="Active Problem Statements & Guidelines"
+              subtitle="Challenge tracks and rules published for candidate synopsis submissions"
             >
               {problemStatements.length === 0 ? (
                 <div className="py-8 text-center text-xs text-slate-500">
@@ -606,7 +661,7 @@ export const AdminPanelPage = () => {
                   {problemStatements.map((ps) => (
                     <div
                       key={ps.id}
-                      className="p-5 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2 hover:border-slate-700 transition-colors"
+                      className="p-5 bg-slate-950/60 border border-slate-800 rounded-xl space-y-3 hover:border-slate-700 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -632,6 +687,17 @@ export const AdminPanelPage = () => {
                       </div>
 
                       <p className="text-xs text-slate-300 leading-relaxed font-sans">{ps.description}</p>
+
+                      {ps.rules && (
+                        <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-lg space-y-1">
+                          <h5 className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <BookOpen className="w-3.5 h-3.5" /> Track Specific Rules & Guidelines
+                          </h5>
+                          <p className="text-xs text-slate-300 whitespace-pre-wrap font-sans font-mono leading-relaxed">
+                            {ps.rules}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -639,8 +705,82 @@ export const AdminPanelPage = () => {
             </Card>
           </div>
         </div>
+      ) : activeTab === 'config' ? (
+        /* Tab 4: Hackathon Deadlines & Coding Duration Settings */
+        <div className="max-w-2xl mx-auto space-y-6">
+          <Card
+            title="Hackathon Deadlines & Duration Settings"
+            subtitle="Configure candidate synopsis submission deadline and main hackathon coding window duration"
+          >
+            <form onSubmit={handleSaveConfig} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-indigo-400" /> Synopsis Submission Deadline Date & Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={synopsisDeadlineInput}
+                  onChange={(e) => setSynopsisDeadlineInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 transition-colors"
+                  required
+                />
+                <p className="text-[11px] text-slate-400">
+                  Candidates will see a live ticking countdown timer to this exact deadline when submitting proposals.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-emerald-400" /> Final Hackathon Project Submission Hard Deadline
+                </label>
+                <input
+                  type="datetime-local"
+                  value={projectDeadlineInput}
+                  onChange={(e) => setProjectDeadlineInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+                <p className="text-[11px] text-slate-400">
+                  Global event hard lock date & time for all project submissions (GitHub Repo & Live Demo Links).
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-400" /> Hackathon Coding Duration (Hours)
+                </label>
+                <select
+                  value={durationHoursInput}
+                  onChange={(e) => setDurationHoursInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
+                >
+                  <option value={2}>2 Hours (Express Sprint)</option>
+                  <option value={6}>6 Hours (Mini Hackathon)</option>
+                  <option value={12}>12 Hours (Overnight Track)</option>
+                  <option value={24}>24 Hours (Standard Flagship)</option>
+                  <option value={36}>36 Hours (Expanded Track)</option>
+                  <option value={48}>48 Hours (Weekend Championship)</option>
+                </select>
+                <p className="text-[11px] text-slate-400">
+                  When a shortlisted candidate starts their timer, their countdown window is calculated based on this duration.
+                </p>
+              </div>
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                fullWidth
+                loading={savingConfig}
+                icon={Save}
+                className="bg-gradient-to-r from-indigo-600 to-violet-600 font-extrabold"
+              >
+                Save Hackathon Configuration
+              </Button>
+            </form>
+          </Card>
+        </div>
       ) : (
-        /* Tab 4: Declare Results Form */
+        /* Tab 5: Declare Results Form */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form Side */}
           <Card title="Assign Winners" subtitle="Select registered candidate or enter Submission ID">
