@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Select } from '../components/common/Select';
 import { Badge } from '../components/common/Badge';
-import { FileText, Loader2, Filter, ChevronRight } from 'lucide-react';
+import { FileText, Loader2, Filter, ChevronRight, Star } from 'lucide-react';
 
 export const EvaluatorSynopsisListPage = () => {
   const navigate = useNavigate();
@@ -102,6 +102,7 @@ export const EvaluatorSynopsisListPage = () => {
                   <th className="px-4 py-3">Submission ID</th>
                   <th className="px-4 py-3">Problem Statement</th>
                   <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Evaluated Score</th>
                   <th className="px-4 py-3">Submitted At</th>
                   <th className="px-4 py-3 text-right">Action</th>
                 </tr>
@@ -118,6 +119,19 @@ export const EvaluatorSynopsisListPage = () => {
                     <td className="px-4 py-3.5 text-slate-300">{s.problemStatementTitle || s.problemStatementRef || 'General Track'}</td>
                     <td className="px-4 py-3.5">
                       <Badge status={s.status || 'PENDING'} />
+                    </td>
+                    <td className="px-4 py-3.5">
+                      {(() => {
+                        const scoreVal = s.averageScore ?? s.aggregatedScore ?? s.score ?? s.totalScore;
+                        return scoreVal != null ? (
+                          <span className="inline-flex items-center gap-1 font-mono text-xs text-amber-300 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded font-bold">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            {Number(scoreVal).toFixed(1)} / 100
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-mono text-slate-500 italic">Not Rated</span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3.5 font-mono text-slate-400">
                       {s.submittedAt ? new Date(s.submittedAt).toLocaleString() : 'N/A'}

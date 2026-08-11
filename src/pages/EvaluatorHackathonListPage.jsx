@@ -4,7 +4,7 @@ import { evaluatorApi } from '../services/evaluatorApi';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
-import { Terminal, Loader2, GitBranch, ExternalLink, ChevronRight } from 'lucide-react';
+import { Terminal, Loader2, GitBranch, ExternalLink, ChevronRight, Star } from 'lucide-react';
 
 export const EvaluatorHackathonListPage = () => {
   const navigate = useNavigate();
@@ -63,6 +63,7 @@ export const EvaluatorHackathonListPage = () => {
                   <th className="px-4 py-3">Submission ID</th>
                   <th className="px-4 py-3">Problem Statement</th>
                   <th className="px-4 py-3">GitHub Repo</th>
+                  <th className="px-4 py-3">Project Score</th>
                   <th className="px-4 py-3">Submitted At</th>
                   <th className="px-4 py-3 text-right">Action</th>
                 </tr>
@@ -78,9 +79,9 @@ export const EvaluatorHackathonListPage = () => {
                     <td className="px-4 py-3.5 font-mono text-orange-400 font-bold">{sub.submissionId || 'N/A'}</td>
                     <td className="px-4 py-3.5 text-slate-300">{sub.problemStatementTitle || sub.problemStatementRef || 'General Track'}</td>
                     <td className="px-4 py-3.5">
-                      {sub.githubUrl ? (
+                      {sub.githubUrl || sub.githubRepoUrl ? (
                         <a
-                          href={sub.githubUrl}
+                          href={sub.githubUrl || sub.githubRepoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
@@ -92,8 +93,21 @@ export const EvaluatorHackathonListPage = () => {
                         <span className="text-slate-500 font-mono">No link</span>
                       )}
                     </td>
+                    <td className="px-4 py-3.5">
+                      {(() => {
+                        const scoreVal = sub.averageScore ?? sub.aggregatedScore ?? sub.score ?? sub.totalScore;
+                        return scoreVal != null ? (
+                          <span className="inline-flex items-center gap-1 font-mono text-xs text-amber-300 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded font-bold">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            {Number(scoreVal).toFixed(1)} / 100
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-mono text-slate-500 italic">Not Rated</span>
+                        );
+                      })()}
+                    </td>
                     <td className="px-4 py-3.5 font-mono text-slate-400">
-                      {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : 'Recorded'}
+                      {sub.submittedAt || sub.submissionTime ? new Date(sub.submittedAt || sub.submissionTime).toLocaleString() : 'Recorded'}
                     </td>
                     <td className="px-4 py-3.5 text-right">
                       <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-orange-400 transition-colors ml-auto" />

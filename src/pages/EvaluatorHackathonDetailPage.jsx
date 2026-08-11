@@ -18,7 +18,7 @@ export const EvaluatorHackathonDetailPage = () => {
   const [submission, setSubmission] = useState(null);
   const [criteria, setCriteria] = useState([]);
   const [scores, setScores] = useState({});
-  const [overallScore, setOverallScore] = useState(88);
+  const [overallScore, setOverallScore] = useState(0);
   const [comments, setComments] = useState('');
   const [alreadyEvaluated, setAlreadyEvaluated] = useState(false);
 
@@ -50,14 +50,23 @@ export const EvaluatorHackathonDetailPage = () => {
           setAlreadyEvaluated(true);
           const ev = existingEval.value;
           if (ev.comments) setComments(ev.comments);
-          if (ev.totalScore || ev.score) setOverallScore(ev.totalScore || ev.score);
-          if (ev.scores && typeof ev.scores === 'object') setScores(ev.scores);
+          if (ev.scores && typeof ev.scores === 'object' && Object.keys(ev.scores).length > 0) {
+            setScores(ev.scores);
+            const sum = Object.values(ev.scores).reduce((acc, curr) => acc + (Number(curr) || 0), 0);
+            setOverallScore(sum);
+          } else if (ev.totalScore || ev.score) {
+            setOverallScore(ev.totalScore || ev.score);
+          }
         } else {
           const initial = {};
+          let initialSum = 0;
           critList.forEach((c) => {
-            initial[c.name] = Math.round((c.maxScore || 25) * 0.85);
+            const val = Math.round((c.maxScore || 25) * 0.85);
+            initial[c.name] = val;
+            initialSum += val;
           });
           setScores(initial);
+          setOverallScore(initialSum);
         }
       } catch (err) {
         toast.error('Failed to load project submission details.');
@@ -210,7 +219,7 @@ export const EvaluatorHackathonDetailPage = () => {
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
               <Award className="w-5 h-5 text-emerald-400" /> Aggregated Evaluation Score
             </span>
-            <span className="text-xl font-extrabold font-mono text-slate-100">{overallScore} pts</span>
+            <span className="text-xl font-extrabold font-mono text-slate-100">{overallScore} / 100</span>
           </div>
 
           <TextArea

@@ -22,6 +22,7 @@ import {
   Plus,
   Trash2,
   Loader2,
+  Star,
   ChevronDown,
   ChevronUp,
   FileText,
@@ -396,6 +397,7 @@ export const AdminPanelPage = () => {
                     <th className="py-3 px-4">Submission ID</th>
                     <th className="py-3 px-4">Track Ref</th>
                     <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Synopsis Score</th>
                     <th className="py-3 px-4">Submitted At</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
@@ -414,6 +416,19 @@ export const AdminPanelPage = () => {
                           <td className="py-3.5 px-4 font-mono text-slate-300">{item.problemStatementRef || 'PS-01'}</td>
                           <td className="py-3.5 px-4">
                             <Badge status={item.synopsisStatus} />
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {(() => {
+                              const scoreVal = item.averageScore ?? item.aggregatedScore ?? item.score ?? item.totalScore;
+                              return scoreVal != null ? (
+                                <span className="inline-flex items-center gap-1 font-mono text-xs text-amber-300 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded font-bold">
+                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                  {Number(scoreVal).toFixed(1)} / 100
+                                </span>
+                              ) : (
+                                <span className="text-[11px] font-mono text-slate-500 italic">Not Rated</span>
+                              );
+                            })()}
                           </td>
                           <td className="py-3.5 px-4 text-slate-400 font-mono">
                             {item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : 'N/A'}
@@ -514,6 +529,7 @@ export const AdminPanelPage = () => {
                     <th className="py-3 px-4">GitHub Repository</th>
                     <th className="py-3 px-4">Live App Demo</th>
                     <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Project Score</th>
                     <th className="py-3 px-4">Submitted At</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
@@ -570,6 +586,19 @@ export const AdminPanelPage = () => {
                         >
                           {item.status}
                         </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {(() => {
+                          const scoreVal = item.averageScore ?? item.aggregatedScore ?? item.score ?? item.totalScore;
+                          return scoreVal != null ? (
+                            <span className="inline-flex items-center gap-1 font-mono text-xs text-amber-300 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded font-bold">
+                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                              {Number(scoreVal).toFixed(1)} / 100
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-mono text-slate-500 italic">Not Rated</span>
+                          );
+                        })()}
                       </td>
                       <td className="py-3.5 px-4 text-slate-400 font-mono">
                         {item.submissionTime ? new Date(item.submissionTime).toLocaleString() : 'In Progress'}

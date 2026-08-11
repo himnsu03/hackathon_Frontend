@@ -18,7 +18,7 @@ export const EvaluatorSynopsisDetailPage = () => {
   const [synopsis, setSynopsis] = useState(null);
   const [criteria, setCriteria] = useState([]);
   const [scores, setScores] = useState({});
-  const [overallScore, setOverallScore] = useState(85);
+  const [overallScore, setOverallScore] = useState(0);
   const [comments, setComments] = useState('');
   const [alreadyEvaluated, setAlreadyEvaluated] = useState(false);
 
@@ -36,14 +36,15 @@ export const EvaluatorSynopsisDetailPage = () => {
           setSynopsis(synData.value);
         }
 
-        const critList = configData.status === 'fulfilled' && configData.value?.evaluationCriteria
-          ? configData.value.evaluationCriteria
-          : [
-              { name: 'Technical Architecture & Feasibility', maxScore: 25 },
-              { name: 'Innovation & Problem Solving', maxScore: 25 },
-              { name: 'Completeness & Edge Case Handling', maxScore: 25 },
-              { name: 'Clarity & Code Structure', maxScore: 25 },
-            ];
+        const critList = [
+          { name: 'Problem Understanding & Relevance', maxScore: 10, description: 'Understanding of problem statement, constraints & context' },
+          { name: 'Innovation & Originality', maxScore: 20, description: 'Novelty of approach & creative problem solving' },
+          { name: 'Technical Implementation', maxScore: 20, description: 'Quality of architecture, algorithms & technology stack' },
+          { name: 'Feasibility & Practicality', maxScore: 15, description: 'Production readiness & enterprise constraints' },
+          { name: 'Business Impact & Scalability', maxScore: 15, description: 'Value creation, efficiency & system scalability' },
+          { name: 'User Experience & Design', maxScore: 10, description: 'Workflow clarity, usability & accessibility' },
+          { name: 'Presentation & Demonstration', maxScore: 10, description: 'Pitch quality, communication & Q&A handling' },
+        ];
         setCriteria(critList);
 
         // Pre-fill existing evaluation if found
@@ -51,15 +52,24 @@ export const EvaluatorSynopsisDetailPage = () => {
           setAlreadyEvaluated(true);
           const ev = existingEval.value;
           if (ev.comments) setComments(ev.comments);
-          if (ev.totalScore || ev.score) setOverallScore(ev.totalScore || ev.score);
-          if (ev.scores && typeof ev.scores === 'object') setScores(ev.scores);
+          if (ev.scores && typeof ev.scores === 'object' && Object.keys(ev.scores).length > 0) {
+            setScores(ev.scores);
+            const sum = Object.values(ev.scores).reduce((acc, curr) => acc + (Number(curr) || 0), 0);
+            setOverallScore(sum);
+          } else if (ev.totalScore || ev.score) {
+            setOverallScore(ev.totalScore || ev.score);
+          }
         } else {
           // Initialize default scores per criterion
           const initial = {};
+          let initialSum = 0;
           critList.forEach((c) => {
-            initial[c.name] = Math.round((c.maxScore || 25) * 0.8);
+            const val = Math.round((c.maxScore || 25) * 0.8);
+            initial[c.name] = val;
+            initialSum += val;
           });
           setScores(initial);
+          setOverallScore(initialSum);
         }
       } catch (err) {
         toast.error('Failed to load synopsis submission details.');
@@ -182,7 +192,7 @@ export const EvaluatorSynopsisDetailPage = () => {
             <span className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
               <Award className="w-5 h-5 text-orange-400" /> Aggregated Evaluation Score
             </span>
-            <span className="text-xl font-extrabold font-mono text-slate-100">{overallScore} pts</span>
+            <span className="text-xl font-extrabold font-mono text-slate-100">{overallScore} / 100</span>
           </div>
 
           <TextArea
