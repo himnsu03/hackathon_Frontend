@@ -185,7 +185,7 @@ export const MainHackathonPage = () => {
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-3" />
+        <Loader2 className="w-10 h-10 animate-spin text-orange-500 mb-3" />
         <p className="text-sm font-medium text-slate-400">Loading hackathon workspace...</p>
       </div>
     );
@@ -209,11 +209,11 @@ export const MainHackathonPage = () => {
       {isTimerStarted ? (
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-400">
               <Clock className="w-6 h-6 animate-pulse" />
             </div>
             <div>
-              <span className="text-xs font-mono text-indigo-400 font-bold uppercase tracking-wider block">
+              <span className="text-xs font-mono text-orange-400 font-bold uppercase tracking-wider block">
                 {isSubmitted ? 'SUBMISSION RECORDED' : isLocked ? 'TIMER EXPIRED' : 'HACKATHON TIMER ACTIVE'}
               </span>
               <h2 className="text-xl font-extrabold text-slate-100 mt-0.5">
@@ -221,7 +221,7 @@ export const MainHackathonPage = () => {
               </h2>
               {startTimeDisplay && (
                 <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono mt-1">
-                  <CalendarCheck className="w-3.5 h-3.5 text-indigo-400" />
+                  <CalendarCheck className="w-3.5 h-3.5 text-orange-400" />
                   <span>Timer Started At: <strong>{startTimeDisplay}</strong></span>
                 </div>
               )}
@@ -237,8 +237,8 @@ export const MainHackathonPage = () => {
         </div>
       ) : (
         /* Pre-Start CTA Hero Box */
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border border-indigo-500/40 rounded-2xl p-8 shadow-2xl text-center space-y-4">
-          <div className="w-14 h-14 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl flex items-center justify-center text-indigo-400 mx-auto">
+        <div className="bg-gradient-to-r from-slate-900 via-orange-950/60 to-slate-900 border border-orange-500/40 rounded-2xl p-8 shadow-2xl text-center space-y-4">
+          <div className="w-14 h-14 bg-orange-500/10 border border-orange-500/30 rounded-2xl flex items-center justify-center text-orange-400 mx-auto">
             <Terminal className="w-7 h-7" />
           </div>
           <h2 className="text-3xl font-extrabold text-white">Ready to Begin the Hackathon?</h2>
@@ -252,7 +252,7 @@ export const MainHackathonPage = () => {
             icon={Play}
             loading={starting}
             onClick={handleStartHackathon}
-            className="bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-extrabold px-8 py-3 rounded-xl shadow-xl shadow-indigo-500/25"
+            className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-extrabold px-8 py-3 rounded-xl shadow-xl shadow-orange-500/25"
           >
             Start Hackathon Timer Now
           </Button>
@@ -267,7 +267,7 @@ export const MainHackathonPage = () => {
             title={problemStatement?.title || 'Selected Hackathon Track Problem'}
             subtitle={`Reference: ${problemStatement?.id || 'PS-01'} • Category: ${problemStatement?.category || 'IoT & Smart Cities'}`}
             headerAction={
-              <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded-full text-xs font-mono font-bold">
+              <span className="px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-full text-xs font-mono font-bold">
                 {problemStatement?.id || 'PS-01'}
               </span>
             }
@@ -284,7 +284,7 @@ export const MainHackathonPage = () => {
 
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <FileCheck2 className="w-4 h-4 text-indigo-400" /> Core Engineering Deliverables
+                  <FileCheck2 className="w-4 h-4 text-orange-400" /> Core Engineering Deliverables
                 </h4>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-300">
                   <li className="p-3 bg-slate-900/60 border border-slate-800 rounded-lg flex items-center gap-2">
@@ -318,7 +318,7 @@ export const MainHackathonPage = () => {
                   <span className="font-bold text-slate-200">Functionality & Completeness</span>
                   <p className="text-[10px] text-slate-400">Core problem solved effectively</p>
                 </div>
-                <span className="font-mono font-bold text-indigo-400 text-sm">40%</span>
+                <span className="font-mono font-bold text-orange-400 text-sm">40%</span>
               </div>
 
               <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
@@ -326,7 +326,7 @@ export const MainHackathonPage = () => {
                   <span className="font-bold text-slate-200">Code Architecture & Quality</span>
                   <p className="text-[10px] text-slate-400">Clean code, pattern & error handling</p>
                 </div>
-                <span className="font-mono font-bold text-indigo-400 text-sm">30%</span>
+                <span className="font-mono font-bold text-orange-400 text-sm">30%</span>
               </div>
 
               <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
@@ -334,7 +334,7 @@ export const MainHackathonPage = () => {
                   <span className="font-bold text-slate-200">UI / UX Polish</span>
                   <p className="text-[10px] text-slate-400">Responsiveness & visual aesthetics</p>
                 </div>
-                <span className="font-mono font-bold text-indigo-400 text-sm">15%</span>
+                <span className="font-mono font-bold text-orange-400 text-sm">15%</span>
               </div>
 
               <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
@@ -342,7 +342,7 @@ export const MainHackathonPage = () => {
                   <span className="font-bold text-slate-200">Innovation & Creativity</span>
                   <p className="text-[10px] text-slate-400">Unique features & edge handling</p>
                 </div>
-                <span className="font-mono font-bold text-indigo-400 text-sm">15%</span>
+                <span className="font-mono font-bold text-orange-400 text-sm">15%</span>
               </div>
             </div>
           </Card>
@@ -402,7 +402,7 @@ export const MainHackathonPage = () => {
               fullWidth
               loading={submitting}
               icon={GitBranch}
-              className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 font-extrabold"
+              className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 font-extrabold"
             >
               {isSubmitted ? 'Update Project Submission' : 'Submit Final Hackathon Entry'}
             </Button>

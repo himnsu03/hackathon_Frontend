@@ -15,17 +15,19 @@ import { MainHackathonPage } from './pages/MainHackathonPage';
 import { ResultsPage } from './pages/ResultsPage';
 import { AdminPanelPage } from './pages/AdminPanelPage';
 
+import { LandingPage } from './pages/LandingPage';
+
 export function App() {
   return (
     <AuthProvider>
       <ToastProvider>
         <Router>
-          <div className="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100 selection:bg-indigo-500 selection:text-white">
+          <div className="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100 selection:bg-orange-500 selection:text-white">
             <Navbar />
             <main className="flex-1">
               <Routes>
-                {/* Default Landing Redirect */}
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                {/* Landing Page */}
+                <Route path="/" element={<LandingPage />} />
 
                 {/* Public Auth Flow */}
                 <Route path="/register" element={<RegistrationPage />} />

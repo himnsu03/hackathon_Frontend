@@ -38,7 +38,7 @@ export const TextArea = React.forwardRef(({
         className={`w-full bg-slate-900/80 border text-slate-100 placeholder-slate-500 text-sm rounded-xl p-3.5 transition-all duration-200 focus:outline-none focus:ring-2 resize-y ${
           error
             ? 'border-rose-500/80 focus:ring-rose-500/30 focus:border-rose-500'
-            : 'border-slate-700/80 focus:ring-indigo-500/30 focus:border-indigo-500 hover:border-slate-600'
+            : 'border-slate-700/80 focus:ring-orange-500/30 focus:border-orange-500 hover:border-slate-600'
         } ${className}`}
         {...props}
       />

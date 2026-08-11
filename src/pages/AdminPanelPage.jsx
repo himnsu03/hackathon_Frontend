@@ -284,7 +284,7 @@ export const AdminPanelPage = () => {
       {/* Admin Panel Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4" /> Organizer Admin Controls
           </div>
           <h1 className="text-2xl font-extrabold text-slate-100 mt-2">Hackathon Management Console</h1>
@@ -310,7 +310,7 @@ export const AdminPanelPage = () => {
               onClick={() => setActiveTab('synopsis')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeTab === 'synopsis'
-                  ? 'bg-indigo-600 text-white shadow-md'
+                  ? 'bg-orange-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -323,7 +323,7 @@ export const AdminPanelPage = () => {
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeTab === 'projects'
-                  ? 'bg-indigo-600 text-white shadow-md'
+                  ? 'bg-orange-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -333,7 +333,7 @@ export const AdminPanelPage = () => {
               onClick={() => setActiveTab('problems')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeTab === 'problems'
-                  ? 'bg-indigo-600 text-white shadow-md'
+                  ? 'bg-orange-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -343,7 +343,7 @@ export const AdminPanelPage = () => {
               onClick={() => setActiveTab('config')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeTab === 'config'
-                  ? 'bg-indigo-600 text-white shadow-md'
+                  ? 'bg-orange-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -356,7 +356,7 @@ export const AdminPanelPage = () => {
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeTab === 'results'
-                  ? 'bg-indigo-600 text-white shadow-md'
+                  ? 'bg-orange-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -389,7 +389,7 @@ export const AdminPanelPage = () => {
         >
           {synopsisLoading ? (
             <div className="py-12 text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto mb-2" />
+              <Loader2 className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-2" />
               <p className="text-xs text-slate-400">Fetching synopsis submissions from Spring Boot backend...</p>
             </div>
           ) : synopses.length === 0 ? (
@@ -419,7 +419,7 @@ export const AdminPanelPage = () => {
                             <div>{item.fullName}</div>
                             <span className="text-[10px] text-slate-500 font-mono">{item.email}</span>
                           </td>
-                          <td className="py-3.5 px-4 font-mono font-bold text-indigo-400">{item.submissionId}</td>
+                          <td className="py-3.5 px-4 font-mono font-bold text-orange-400">{item.submissionId}</td>
                           <td className="py-3.5 px-4 font-mono text-slate-300">{item.problemStatementRef || 'PS-01'}</td>
                           <td className="py-3.5 px-4">
                             <Badge status={item.synopsisStatus} />
@@ -435,7 +435,7 @@ export const AdminPanelPage = () => {
                                 className="px-2.5 py-1 text-slate-300 hover:text-white bg-slate-800 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 text-[11px] font-medium"
                                 title="View proposal text"
                               >
-                                <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                                <FileText className="w-3.5 h-3.5 text-orange-400" />
                                 Proposal
                                 {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                               </button>
@@ -470,10 +470,10 @@ export const AdminPanelPage = () => {
                           <tr className="bg-slate-950/90 border-b border-slate-800">
                             <td colSpan={6} className="p-4">
                               <div className="p-4 bg-slate-900/80 border border-slate-800 rounded-xl space-y-2">
-                                <h5 className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
+                                <h5 className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
                                   <FileText className="w-4 h-4" /> Technical Synopsis Proposal Description
                                 </h5>
-                                <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-sans">
+                                <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap break-words break-all [overflow-wrap:anywhere] max-w-full overflow-hidden font-sans">
                                   {item.synopsisContent || 'No proposal text available.'}
                                 </div>
                               </div>
@@ -496,7 +496,7 @@ export const AdminPanelPage = () => {
         >
           {projectsLoading ? (
             <div className="py-12 text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto mb-2" />
+              <Loader2 className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-2" />
               <p className="text-xs text-slate-400">Loading project repository submissions from Spring Boot...</p>
             </div>
           ) : projectSubmissions.length === 0 ? (
@@ -523,16 +523,16 @@ export const AdminPanelPage = () => {
                         <div>{item.candidateName}</div>
                         <span className="text-[10px] text-slate-500 font-mono">{item.candidateEmail}</span>
                       </td>
-                      <td className="py-3.5 px-4 font-mono font-bold text-indigo-400">{item.submissionId}</td>
+                      <td className="py-3.5 px-4 font-mono font-bold text-orange-400">{item.submissionId}</td>
                       <td className="py-3.5 px-4">
                         {item.githubRepoUrl ? (
                           <a
                             href={item.githubRepoUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 hover:underline font-mono font-medium"
+                            className="inline-flex items-center gap-1.5 text-orange-400 hover:text-orange-300 hover:underline font-mono font-medium"
                           >
-                            <GitBranch className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            <GitBranch className="w-3.5 h-3.5 text-orange-400 shrink-0" />
                             <span>Repository</span>
                             <ExternalLink className="w-3 h-3 shrink-0" />
                           </a>
@@ -562,7 +562,7 @@ export const AdminPanelPage = () => {
                             item.status === 'SUBMITTED'
                               ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                               : item.status === 'IN_PROGRESS'
-                              ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 animate-pulse'
+                              ? 'bg-orange-500/10 text-orange-400 border border-orange-500/30 animate-pulse'
                               : 'bg-slate-800 text-slate-400'
                           }`}
                         >
@@ -666,7 +666,7 @@ export const AdminPanelPage = () => {
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/30">
+                            <span className="text-[10px] font-mono font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/30">
                               {ps.id}
                             </span>
                             <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">
@@ -715,13 +715,13 @@ export const AdminPanelPage = () => {
             <form onSubmit={handleSaveConfig} className="space-y-6">
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-indigo-400" /> Synopsis Submission Deadline Date & Time
+                  <Calendar className="w-4 h-4 text-orange-400" /> Synopsis Submission Deadline Date & Time
                 </label>
                 <input
                   type="datetime-local"
                   value={synopsisDeadlineInput}
                   onChange={(e) => setSynopsisDeadlineInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-orange-500 transition-colors"
                   required
                 />
                 <p className="text-[11px] text-slate-400">
@@ -737,7 +737,7 @@ export const AdminPanelPage = () => {
                   type="datetime-local"
                   value={projectDeadlineInput}
                   onChange={(e) => setProjectDeadlineInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-orange-500 transition-colors"
                 />
                 <p className="text-[11px] text-slate-400">
                   Global event hard lock date & time for all project submissions (GitHub Repo & Live Demo Links).
@@ -751,7 +751,7 @@ export const AdminPanelPage = () => {
                 <select
                   value={durationHoursInput}
                   onChange={(e) => setDurationHoursInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-orange-500 cursor-pointer"
                 >
                   <option value={2}>2 Hours (Express Sprint)</option>
                   <option value={6}>6 Hours (Mini Hackathon)</option>
@@ -772,7 +772,7 @@ export const AdminPanelPage = () => {
                 fullWidth
                 loading={savingConfig}
                 icon={Save}
-                className="bg-gradient-to-r from-indigo-600 to-violet-600 font-extrabold"
+                className="bg-gradient-to-r from-orange-600 to-red-600 font-extrabold"
               >
                 Save Hackathon Configuration
               </Button>
@@ -876,7 +876,7 @@ export const AdminPanelPage = () => {
                         </span>
                         <h4 className="text-sm font-bold text-slate-100 mt-1">{item.name || 'Winning Candidate'}</h4>
                         <p className="text-xs text-slate-400 font-mono">
-                          Submission ID: <strong className="text-indigo-400">{item.submissionId}</strong>
+                          Submission ID: <strong className="text-orange-400">{item.submissionId}</strong>
                         </p>
                       </div>
 

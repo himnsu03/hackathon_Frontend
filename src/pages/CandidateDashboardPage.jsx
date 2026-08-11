@@ -76,7 +76,7 @@ export const CandidateDashboardPage = () => {
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-3" />
+        <Loader2 className="w-10 h-10 animate-spin text-orange-500 mb-3" />
         <p className="text-sm font-medium text-slate-400">Loading candidate dashboard...</p>
       </div>
     );
@@ -111,10 +111,10 @@ export const CandidateDashboardPage = () => {
       )}
 
       {/* Hero Header Card: Submission ID & Status */}
-      <Card className="bg-gradient-to-r from-slate-900/90 via-indigo-950/30 to-slate-900 border-indigo-500/20">
+      <Card className="bg-gradient-to-r from-slate-900/90 via-orange-950/30 to-slate-900 border-orange-500/20">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
-            <div className="text-xs font-mono font-bold tracking-widest text-indigo-400 uppercase">
+            <div className="text-xs font-mono font-bold tracking-widest text-orange-400 uppercase">
               Official Candidate Identifier
             </div>
             <div className="flex items-center gap-3">
@@ -160,8 +160,8 @@ export const CandidateDashboardPage = () => {
         <div className="lg:col-span-2 space-y-8">
           {/* Synopsis Action CTA Card */}
           <Card
-            title={synopsisStatus === 'NOT_SUBMITTED' ? 'Synopsis Submission Action Required' : 'Synopsis Submission Status'}
-            subtitle={synopsisStatus === 'NOT_SUBMITTED' ? 'Submit your proposal before the deadline to qualify for shortlisting.' : 'Your submitted proposal is recorded on the platform.'}
+            title={synopsisStatus === 'NOT_SUBMITTED' ? 'Synopsis Submission Action Required' : synopsisStatus === 'SHORTLISTED' ? 'Synopsis Shortlisted & Locked' : 'Synopsis Submission Status'}
+            subtitle={synopsisStatus === 'NOT_SUBMITTED' ? 'Submit your proposal before the deadline to qualify for shortlisting.' : synopsisStatus === 'SHORTLISTED' ? 'Your proposal has been shortlisted. Problem track and proposal content are locked.' : 'Your submitted proposal is recorded on the platform.'}
           >
             <div className="space-y-4">
               <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2">
@@ -213,26 +213,24 @@ export const CandidateDashboardPage = () => {
                 <div key={idx} className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   {/* Circle Marker */}
                   <div
-                    className={`absolute -left-6 top-1 w-4 h-4 rounded-full border-2 ${
-                      kd.status === 'completed'
-                        ? 'bg-emerald-500 border-emerald-400'
-                        : kd.status === 'active'
-                        ? 'bg-indigo-500 border-indigo-400 animate-ping'
+                    className={`absolute -left-6 top-1 w-4 h-4 rounded-full border-2 ${kd.status === 'completed'
+                      ? 'bg-emerald-500 border-emerald-400'
+                      : kd.status === 'active'
+                        ? 'bg-orange-500 border-orange-400 animate-ping'
                         : 'bg-slate-900 border-slate-700'
-                    }`}
+                      }`}
                   />
                   <div>
                     <h5 className="text-sm font-semibold text-slate-200">{kd.label}</h5>
                     <span className="text-xs font-mono text-slate-400">{kd.date}</span>
                   </div>
                   <span
-                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full w-fit ${
-                      kd.status === 'completed'
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                        : kd.status === 'active'
-                        ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'
+                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full w-fit ${kd.status === 'completed'
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                      : kd.status === 'active'
+                        ? 'bg-orange-500/10 text-orange-400 border border-orange-500/30'
                         : 'bg-slate-800 text-slate-500'
-                    }`}
+                      }`}
                   >
                     {kd.status}
                   </span>
@@ -257,10 +255,10 @@ export const CandidateDashboardPage = () => {
                     <button
                       type="button"
                       onClick={() => setExpandedRule(isOpen ? null : idx)}
-                      className="w-full p-3.5 text-left flex items-center justify-between text-xs font-semibold text-slate-200 hover:text-indigo-300"
+                      className="w-full p-3.5 text-left flex items-center justify-between text-xs font-semibold text-slate-200 hover:text-orange-300"
                     >
                       <span>{rule.title}</span>
-                      {isOpen ? <ChevronUp className="w-4 h-4 text-indigo-400" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                      {isOpen ? <ChevronUp className="w-4 h-4 text-orange-400" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
                     </button>
                     {isOpen && (
                       <div className="px-3.5 pb-3.5 text-xs text-slate-400 leading-relaxed border-t border-slate-800/60 pt-2">
@@ -274,12 +272,12 @@ export const CandidateDashboardPage = () => {
           </Card>
 
           {/* Organizer Note */}
-          <div className="p-5 bg-indigo-950/30 border border-indigo-500/20 rounded-2xl space-y-2">
-            <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
+          <div className="p-5 bg-orange-950/30 border border-orange-500/20 rounded-2xl space-y-2">
+            <div className="flex items-center gap-2 text-orange-400 text-xs font-bold uppercase tracking-wider">
               <ShieldCheck className="w-4 h-4" /> Verified Platform
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              If you have any questions regarding your submission status or experience issues, reach out to the organizing team via Discord or email support.
+              If you have any questions regarding your submission status or experience issues, reach out to the organizing team via <b style={{ color: 'orange' }}>email support</b>.
             </p>
           </div>
         </div>

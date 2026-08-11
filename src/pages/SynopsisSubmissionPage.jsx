@@ -9,11 +9,11 @@ import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { TextArea } from '../components/common/TextArea';
 import { CountdownTimer } from '../components/common/CountdownTimer';
-import { FileText, Send, CheckCircle2, Loader2, ArrowLeft, Lightbulb, Check, RefreshCw } from 'lucide-react';
+import { FileText, Send, CheckCircle2, Loader2, ArrowLeft, Lightbulb, Check, RefreshCw, Lock } from 'lucide-react';
 
 export const SynopsisSubmissionPage = () => {
   const navigate = useNavigate();
-  const { updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const toast = useToast();
 
   const [synopsisData, setSynopsisData] = useState(null);
@@ -56,8 +56,19 @@ export const SynopsisSubmissionPage = () => {
 
   const selectedProblem = problemStatements.find((p) => p.id === selectedProblemId) || problemStatements[0];
 
+  const status = synopsisData?.status || user?.synopsisStatus || 'NOT_SUBMITTED';
+  const isShortlisted = status === 'SHORTLISTED';
+  const isSubmitted = Boolean(synopsisData?.submitted) && (!isEditing || isShortlisted);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isShortlisted) {
+      setError('Your synopsis has been shortlisted and cannot be edited or switched.');
+      toast.error('Shortlisted synopses are locked.');
+      return;
+    }
+
     if (content.length < MIN_CHARS) {
       setError(`Your proposal must contain at least ${MIN_CHARS} characters (currently ${content.length}).`);
       return;
@@ -90,14 +101,11 @@ export const SynopsisSubmissionPage = () => {
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-3" />
+        <Loader2 className="w-10 h-10 animate-spin text-orange-500 mb-3" />
         <p className="text-sm font-medium text-slate-400">Loading synopsis workspace...</p>
       </div>
     );
   }
-
-  const isSubmitted = synopsisData?.submitted && !isEditing;
-  const status = synopsisData?.status || 'NOT_SUBMITTED';
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
@@ -131,11 +139,11 @@ export const SynopsisSubmissionPage = () => {
                 <Lightbulb className="w-4 h-4 text-amber-400" /> Select Problem Statement Track
               </label>
 
-              {isSubmitted && (
+              {isSubmitted && !isShortlisted && (
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+                  className="text-xs text-orange-400 hover:text-orange-300 font-semibold flex items-center gap-1"
                 >
                   <RefreshCw className="w-3.5 h-3.5" /> Change Problem / Edit Proposal
                 </button>
@@ -143,8 +151,8 @@ export const SynopsisSubmissionPage = () => {
             </div>
 
             {isSubmitted ? (
-              <div className="p-4 bg-gradient-to-r from-slate-950 to-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-1">
-                <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase">{selectedProblem?.id}</span>
+              <div className="p-4 bg-gradient-to-r from-slate-950 to-orange-950/40 border border-orange-500/30 rounded-xl space-y-1">
+                <span className="text-[10px] font-mono text-orange-400 font-bold uppercase">{selectedProblem?.id}</span>
                 <h4 className="text-sm font-bold text-slate-100">{selectedProblem?.title || 'Smart Waste Management'}</h4>
                 <p className="text-xs text-slate-300">{selectedProblem?.description}</p>
               </div>
@@ -159,16 +167,16 @@ export const SynopsisSubmissionPage = () => {
                       onClick={() => setSelectedProblemId(ps.id)}
                       className={`p-4 rounded-xl border text-left transition-all relative ${
                         isSelected
-                          ? 'bg-indigo-950/60 border-indigo-500 text-slate-100 ring-2 ring-indigo-500/40 shadow-lg'
+                          ? 'bg-orange-950/60 border-orange-500 text-slate-100 ring-2 ring-orange-500/40 shadow-lg'
                           : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
                       }`}
                     >
                       {isSelected && (
-                        <span className="absolute top-3 right-3 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center text-slate-950">
+                        <span className="absolute top-3 right-3 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-slate-950">
                           <Check className="w-3.5 h-3.5 stroke-[3]" />
                         </span>
                       )}
-                      <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase block">{ps.id}</span>
+                      <span className="text-[10px] font-mono text-orange-400 font-bold uppercase block">{ps.id}</span>
                       <h4 className="text-xs font-bold text-slate-100 mt-0.5">{ps.title}</h4>
                       <span className="text-[10px] text-slate-500 block mb-1 font-mono">{ps.category}</span>
                       <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{ps.description}</p>
@@ -180,7 +188,7 @@ export const SynopsisSubmissionPage = () => {
           </div>
 
           {isSubmitted ? (
-            /* Read-Only Mode with Edit Button */
+            /* Read-Only Mode */
             <div className="space-y-4 pt-2">
               <div className="flex items-center justify-between p-3 bg-slate-900/80 border border-slate-800 rounded-xl text-xs">
                 <span className="text-slate-400">
@@ -198,26 +206,36 @@ export const SynopsisSubmissionPage = () => {
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-2">
                   Submitted Proposal Content ({selectedProblemId})
                 </label>
-                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl text-sm text-slate-200 whitespace-pre-wrap leading-relaxed font-sans min-h-[160px]">
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl text-sm text-slate-200 whitespace-pre-wrap break-words break-all [overflow-wrap:anywhere] max-w-full overflow-hidden leading-relaxed font-sans min-h-[160px]">
                   {synopsisData?.synopsisContent}
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-emerald-950/30 border border-emerald-500/20 text-emerald-300 rounded-xl text-xs">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                  <span>Your proposal is recorded. You can edit your text or switch problem statements anytime.</span>
+              {isShortlisted ? (
+                <div className="flex items-center gap-3 p-4 bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs">
+                  <Lock className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <div>
+                    <span className="font-bold text-emerald-200 block mb-0.5">Synopsis Shortlisted & Locked</span>
+                    <span>Your synopsis proposal has been shortlisted. Problem track selection and proposal content are locked and cannot be edited or switched.</span>
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  icon={RefreshCw}
-                  onClick={() => setIsEditing(true)}
-                  className="shrink-0"
-                >
-                  Switch Track / Edit Proposal
-                </Button>
-              </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-emerald-950/30 border border-emerald-500/20 text-emerald-300 rounded-xl text-xs">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <span>Your proposal is recorded. You can edit your text or switch problem statements anytime before shortlisting.</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    icon={RefreshCw}
+                    onClick={() => setIsEditing(true)}
+                    className="shrink-0"
+                  >
+                    Switch Track / Edit Proposal
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             /* Editable Form Mode */
@@ -235,7 +253,7 @@ export const SynopsisSubmissionPage = () => {
               />
 
               <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-1 text-xs text-slate-400">
-                <h5 className="font-semibold text-slate-300 font-mono text-indigo-400">Selected Challenge: {selectedProblem?.title} ({selectedProblemId})</h5>
+                <h5 className="font-semibold text-slate-300 font-mono text-orange-400">Selected Challenge: {selectedProblem?.title} ({selectedProblemId})</h5>
                 <p>
                   Submitting will record your proposal under <strong>{selectedProblemId}</strong> for organizer review. You can update or switch problem statements anytime.
                 </p>

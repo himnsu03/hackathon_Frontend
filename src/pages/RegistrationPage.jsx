@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../services/authApi';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Input } from '../components/common/Input';
 import { Select } from '../components/common/Select';
 import { Button } from '../components/common/Button';
-import { User, Mail, Phone, GraduationCap, Building2, Briefcase, CheckCircle2, ShieldAlert, X, Plus } from 'lucide-react';
+import { User, Mail, Phone, Lock, GraduationCap, Building2, Briefcase, CheckCircle2, ShieldAlert, X, Plus } from 'lucide-react';
 
 const POPULAR_TECH_STACKS = ['React', 'Node.js', 'Python', 'Java', 'TypeScript', 'Go', 'Docker', 'AWS', 'Flutter', 'TailwindCSS'];
 
 export const RegistrationPage = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const toast = useToast();
 
   const currentYear = new Date().getFullYear();
@@ -33,7 +36,6 @@ export const RegistrationPage = () => {
   const [customTag, setCustomTag] = useState('');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [successState, setSuccessState] = useState(null);
   const [showRulesModal, setShowRulesModal] = useState(false);
 
   const handleAddTag = (tag) => {
@@ -94,11 +96,20 @@ export const RegistrationPage = () => {
         techStack,
       });
 
-      toast.success(res.message || 'Registration successful!');
-      setSuccessState({
-        email: formData.email,
-        message: res.message || 'Account created! You can now log in.',
-      });
+      // Automatically log in the candidate upon successful registration
+      try {
+        if (res && res.token && res.user) {
+          login(res.token, res.user);
+        } else {
+          const loginRes = await authApi.login(formData.email.trim(), formData.password);
+          login(loginRes.token, loginRes.user);
+        }
+        toast.success(`Registration successful! Welcome, ${formData.fullName.trim()}!`);
+        navigate('/dashboard', { replace: true });
+      } catch (loginErr) {
+        toast.success('Registration successful! Please log in with your credentials.');
+        navigate('/login', { replace: true });
+      }
     } catch (err) {
       const msg = err.response?.data?.message || 'Registration failed. Please try again.';
       toast.error(msg);
@@ -107,39 +118,12 @@ export const RegistrationPage = () => {
     }
   };
 
-  if (successState) {
-    return (
-      <div className="min-h-[85vh] flex flex-col items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center py-8 px-6">
-          <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <h2 className="text-2xl font-extrabold text-slate-100">Registration Successful!</h2>
-          <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-            Your candidate account for <strong className="text-indigo-400">{successState.email}</strong> has been created.
-          </p>
-          <p className="text-xs text-slate-400 mt-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-            You can now log into your candidate dashboard using your registered email address and password.
-          </p>
-
-          <div className="mt-6">
-            <Link to="/login">
-              <Button variant="primary" size="lg" fullWidth>
-                Proceed to Login
-              </Button>
-            </Link>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-[85vh] py-10 px-4 flex flex-col items-center justify-center">
       {/* Header */}
       <div className="text-center max-w-lg mb-8">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-100 tracking-tight">
-          Join <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-violet-400">StackHack 2.0</span>
+          Join <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">StackHack 2.0</span>
         </h1>
         <p className="text-sm text-slate-400 mt-2">
           Enterprise Hackathon Platform — Showcase your software engineering innovation.
@@ -150,7 +134,7 @@ export const RegistrationPage = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Section 1: Personal Info */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-4 pb-1 border-b border-indigo-500/20">
+            <h4 className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-4 pb-1 border-b border-orange-500/20">
               1. Personal Information
             </h4>
             <div className="space-y-4">
@@ -190,7 +174,8 @@ export const RegistrationPage = () => {
                 <Input
                   label="Password"
                   type="password"
-                  placeholder="Create password"
+                  icon={Lock}
+                  placeholder="At least 6 chars"
                   required
                   value={formData.password || ''}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -211,7 +196,7 @@ export const RegistrationPage = () => {
 
           {/* Section 2: Professional & Academic Info */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-4 pb-1 border-b border-indigo-500/20">
+            <h4 className="text-xs font-bold uppercase tracking-widest text-orange-400 mb-4 pb-1 border-b border-orange-500/20">
               2. Academic & Tech Profile
             </h4>
             <div className="space-y-4">
@@ -234,41 +219,18 @@ export const RegistrationPage = () => {
                 />
               </div>
 
-              {/* Experience Level */}
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-2">
-                  Experience Level <span className="text-rose-400">*</span>
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {['Student', '0-1 yrs', '1-3 yrs', '3+ yrs'].map((exp) => (
-                    <button
-                      type="button"
-                      key={exp}
-                      onClick={() => setFormData({ ...formData, experience: exp })}
-                      className={`px-3 py-2 text-xs font-medium rounded-xl border transition-all ${
-                        formData.experience === exp
-                          ? 'bg-indigo-600/30 border-indigo-500 text-indigo-200'
-                          : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
-                      }`}
-                    >
-                      {exp}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Tech Stack Tags Input */}
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1">
                   Tech Stack Skills <span className="text-rose-400">*</span>
                 </label>
-                
+
                 {/* Active Tags */}
                 <div className="flex flex-wrap gap-2 mb-2 p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl min-h-[44px]">
                   {techStack.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 rounded-lg"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-orange-500/20 text-orange-300 border border-orange-500/40 rounded-lg"
                     >
                       {tag}
                       <button
@@ -295,7 +257,7 @@ export const RegistrationPage = () => {
                         handleAddTag(customTag);
                       }
                     }}
-                    className="flex-1 bg-slate-900/60 border border-slate-800 text-xs rounded-xl px-3 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="flex-1 bg-slate-900/60 border border-slate-800 text-xs rounded-xl px-3 py-1.5 text-slate-200 focus:outline-none focus:border-orange-500"
                   />
                   <Button
                     variant="secondary"
@@ -314,7 +276,7 @@ export const RegistrationPage = () => {
                       type="button"
                       key={t}
                       onClick={() => handleAddTag(t)}
-                      className="text-[11px] px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-400 hover:text-indigo-300 border border-slate-700/50 hover:border-indigo-500/50"
+                      className="text-[11px] px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-400 hover:text-orange-300 border border-slate-700/50 hover:border-orange-500/50"
                     >
                       +{t}
                     </button>
@@ -332,14 +294,14 @@ export const RegistrationPage = () => {
                 type="checkbox"
                 checked={formData.agreeRules}
                 onChange={(e) => setFormData({ ...formData, agreeRules: e.target.checked })}
-                className="mt-1 w-4 h-4 rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-indigo-500 accent-indigo-600"
+                className="mt-1 w-4 h-4 rounded bg-slate-900 border-slate-700 text-orange-600 focus:ring-orange-500 accent-orange-600"
               />
               <span className="text-xs text-slate-300 leading-snug">
                 I agree to the hackathon rules, terms, and{' '}
                 <button
                   type="button"
                   onClick={() => setShowRulesModal(true)}
-                  className="text-indigo-400 underline hover:text-indigo-300 font-semibold"
+                  className="text-orange-400 underline hover:text-orange-300 font-semibold"
                 >
                   Code of Conduct
                 </button>
@@ -355,8 +317,8 @@ export const RegistrationPage = () => {
 
           <p className="text-center text-xs text-slate-400">
             Already have an account?{' '}
-            <Link to="/login" className="text-indigo-400 font-semibold hover:underline">
-              Log in with OTP
+            <Link to="/login" className="text-orange-400 font-semibold hover:underline">
+              Login
             </Link>
           </p>
         </form>

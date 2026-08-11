@@ -23,9 +23,9 @@ export const Button = ({
   };
 
   const variantStyles = {
-    primary: 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-600/25 focus:ring-indigo-500 active:scale-[0.99]',
+    primary: 'bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white shadow-lg shadow-orange-600/25 focus:ring-orange-500 active:scale-[0.99]',
     secondary: 'bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 focus:ring-slate-500 active:scale-[0.99]',
-    outline: 'border border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/10 focus:ring-indigo-500 active:scale-[0.99]',
+    outline: 'border border-orange-500/50 text-orange-400 hover:bg-orange-500/10 focus:ring-orange-500 active:scale-[0.99]',
     danger: 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow-lg shadow-rose-600/25 focus:ring-rose-500 active:scale-[0.99]',
     ghost: 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 focus:ring-slate-500',
   };

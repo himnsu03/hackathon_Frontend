@@ -60,7 +60,7 @@ export const EmailVerificationPage = () => {
       <Card className="max-w-md w-full text-center py-8 px-6">
         {status === 'loading' && (
           <div className="py-6 space-y-4">
-            <Loader2 className="w-12 h-12 animate-spin text-indigo-500 mx-auto" />
+            <Loader2 className="w-12 h-12 animate-spin text-orange-500 mx-auto" />
             <h3 className="text-lg font-bold text-slate-100">Verifying your email...</h3>
             <p className="text-xs text-slate-400">Please hold tight while we confirm your security token.</p>
           </div>

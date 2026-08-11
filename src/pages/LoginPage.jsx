@@ -34,7 +34,7 @@ export const LoginPage = () => {
     setLoading(true);
     try {
       const res = await authApi.login(email.trim(), password);
-      
+
       // Save session
       login(res.token, res.user);
       toast.success(`Welcome back, ${res.user.fullName}!`);
@@ -55,15 +55,6 @@ export const LoginPage = () => {
     }
   };
 
-  const setDemoCredentials = (role) => {
-    if (role === 'admin') {
-      setEmail('admin@hackathon.com');
-      setPassword('Admin@123');
-    } else {
-      setEmail('alex@example.com');
-      setPassword('password123');
-    }
-  };
 
   return (
     <div className="min-h-[85vh] py-12 px-4 flex flex-col items-center justify-center">
@@ -107,32 +98,11 @@ export const LoginPage = () => {
             Log In
           </Button>
 
-          {/* Quick Demo Credentials */}
-          <div className="pt-2 p-3 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1.5 text-center">
-            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
-              Quick Demo Fill:
-            </span>
-            <div className="flex items-center justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => setDemoCredentials('candidate')}
-                className="text-[11px] px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/20 font-mono flex items-center gap-1"
-              >
-                <UserCheck className="w-3 h-3" /> Candidate Demo
-              </button>
-              <button
-                type="button"
-                onClick={() => setDemoCredentials('admin')}
-                className="text-[11px] px-3 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 font-mono flex items-center gap-1"
-              >
-                <ShieldCheck className="w-3 h-3" /> Admin Demo
-              </button>
-            </div>
-          </div>
+
 
           <div className="text-center text-xs text-slate-400 pt-1">
             Don't have an account?{' '}
-            <Link to="/register" className="text-indigo-400 font-semibold hover:underline">
+            <Link to="/register" className="text-orange-400 font-semibold hover:underline">
               Register here
             </Link>
           </div>

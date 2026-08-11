@@ -25,7 +25,7 @@ export const ResultsPage = () => {
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-3" />
+        <Loader2 className="w-10 h-10 animate-spin text-orange-500 mb-3" />
         <p className="text-sm font-medium text-slate-400">Loading hackathon leaderboard...</p>
       </div>
     );
@@ -57,7 +57,7 @@ export const ResultsPage = () => {
       {!declared ? (
         /* Empty State: Results Not Declared Yet */
         <Card className="max-w-md mx-auto text-center py-12 px-6">
-          <div className="w-16 h-16 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-orange-500/10 border border-orange-500/30 text-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Calendar className="w-8 h-8" />
           </div>
           <h3 className="text-xl font-bold text-slate-100">Results Will Be Announced Soon!</h3>
@@ -126,7 +126,7 @@ export const ResultsPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {consolationList.map((item, idx) => (
                   <div key={idx} className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl space-y-1">
-                    <span className="text-[10px] font-mono text-indigo-400 font-bold uppercase block">
+                    <span className="text-[10px] font-mono text-orange-400 font-bold uppercase block">
                       Consolation Winner
                     </span>
                     <h5 className="text-sm font-semibold text-slate-200">{item.name}</h5>

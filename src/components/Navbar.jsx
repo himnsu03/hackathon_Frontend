@@ -34,26 +34,39 @@ export const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand Logo */}
-        <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 p-0.5 shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <Code2 className="w-5 h-5 text-indigo-400" />
-            </div>
-          </div>
-          <div>
-            <span className="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-indigo-200 to-slate-300">
-              Xathon<span className="text-indigo-400">Portal</span>
-            </span>
-            <span className="block text-[10px] font-mono tracking-widest text-slate-500 uppercase">
-              {isAdmin ? 'Admin Console' : 'StackHack 2.0'}
-            </span>
-          </div>
-        </Link>
+      <div className="relative w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Brand Section: Contata Image links to contata.com, XathonPortal links to Home / */}
+        <div className="flex items-center gap-3.5 shrink-0 z-10">
+          <a
+            href="https://www.contata.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group transition-transform hover:scale-[1.03]"
+            title="Visit Contata Solutions Official Website"
+          >
+            <img
+              src="/contata-logo.png"
+              alt="Contata Solutions"
+              className="h-7 sm:h-8 w-auto object-contain"
+            />
+          </a>
 
-        {/* Nav Links */}
-        <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1.5 rounded-xl border border-slate-800/60">
+          <Link
+            to="/"
+            className="hidden sm:flex flex-col justify-center border-l border-slate-700/80 pl-3.5 py-0.5 group transition-transform hover:scale-[1.02]"
+            title="Go to Hackathon Home Page"
+          >
+            <span className="font-extrabold text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-orange-200 to-slate-300 leading-tight">
+              Xathon<span className="text-orange-500">Portal</span>
+            </span>
+            <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase leading-tight mt-0.5 group-hover:text-slate-200 transition-colors">
+              {isAdmin ? 'Admin Console' : 'Contata Hackathon 2026'}
+            </span>
+          </Link>
+        </div>
+
+        {/* Nav Links - Absolutely Centered */}
+        <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1.5 rounded-xl border border-slate-800/60 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10">
           {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             const Icon = item.icon;
@@ -64,7 +77,7 @@ export const Navbar = () => {
                 to={item.path}
                 className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   isActive
-                    ? 'bg-gradient-to-r from-indigo-600/90 to-violet-600/90 text-white shadow-md'
+                    ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-md shadow-orange-950/40'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                 }`}
               >
@@ -81,12 +94,12 @@ export const Navbar = () => {
         </nav>
 
         {/* User Action */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 z-10">
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-xs font-semibold text-slate-200">{user?.fullName}</span>
-                <span className="text-[10px] font-mono text-indigo-400">
+                <span className="text-[10px] font-mono text-orange-400">
                   {isAdmin ? 'ADMINISTRATOR' : (user?.submissionId || user?.email)}
                 </span>
               </div>
@@ -94,7 +107,7 @@ export const Navbar = () => {
                 <span className="hidden sm:inline">Logout</span>
               </Button>
             </div>
-          ) : (
+          ) : location.pathname !== '/' ? (
             <div className="flex items-center gap-2">
               <Link to="/login">
                 <Button variant="ghost" size="sm">Login</Button>
@@ -103,7 +116,7 @@ export const Navbar = () => {
                 <Button variant="primary" size="sm">Register</Button>
               </Link>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </header>
