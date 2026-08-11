@@ -7,7 +7,7 @@ import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { TextArea } from '../components/common/TextArea';
 import { Badge } from '../components/common/Badge';
-import { ArrowLeft, FileText, Lightbulb, Award, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, FileText, Lightbulb, Award, Send, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
 export const EvaluatorSynopsisDetailPage = () => {
   const { id } = useParams();
@@ -15,6 +15,7 @@ export const EvaluatorSynopsisDetailPage = () => {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [synopsis, setSynopsis] = useState(null);
   const [criteria, setCriteria] = useState([]);
   const [scores, setScores] = useState({});
@@ -109,6 +110,32 @@ export const EvaluatorSynopsisDetailPage = () => {
     }
   };
 
+  const handleShortlist = async () => {
+    setActionLoading(true);
+    try {
+      const updated = await evaluatorApi.shortlistSynopsis(id);
+      setSynopsis((prev) => (updated ? updated : { ...prev, status: 'SHORTLISTED' }));
+      toast.success(`Synopsis proposal for ${synopsis?.candidateName || 'Candidate'} shortlisted successfully!`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to shortlist synopsis proposal.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    setActionLoading(true);
+    try {
+      const updated = await evaluatorApi.rejectSynopsis(id);
+      setSynopsis((prev) => (updated ? updated : { ...prev, status: 'REJECTED' }));
+      toast.error(`Synopsis proposal for ${synopsis?.candidateName || 'Candidate'} rejected.`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reject synopsis proposal.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center">
@@ -157,10 +184,10 @@ export const EvaluatorSynopsisDetailPage = () => {
         </div>
       </Card>
 
-      {/* Scoring Form Card */}
+      {/* Scoring & Action Form Card */}
       <Card
-        title="Evaluator Scoring & Feedback"
-        subtitle={alreadyEvaluated ? 'You have evaluated this submission (you can update your scores below).' : 'Rate candidate criteria and provide evaluation comments'}
+        title="Evaluator Scoring & Shortlist Control"
+        subtitle={alreadyEvaluated ? 'You have evaluated this submission (you can update scores or shortlist state below).' : 'Rate candidate criteria, provide feedback, and shortlist candidates'}
       >
         <form onSubmit={handleSubmitScore} className="space-y-6">
           <div className="space-y-4">
@@ -203,7 +230,35 @@ export const EvaluatorSynopsisDetailPage = () => {
             placeholder="Write constructive evaluation notes regarding architecture, feasibility, and risk..."
           />
 
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="success"
+                size="md"
+                icon={CheckCircle2}
+                loading={actionLoading}
+                disabled={synopsis?.status === 'SHORTLISTED'}
+                onClick={handleShortlist}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+              >
+                {synopsis?.status === 'SHORTLISTED' ? 'Shortlisted' : 'Shortlist Synopsis'}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                icon={XCircle}
+                loading={actionLoading}
+                disabled={synopsis?.status === 'REJECTED'}
+                onClick={handleReject}
+                className="border-rose-500/50 text-rose-400 hover:bg-rose-950/60 font-semibold"
+              >
+                {synopsis?.status === 'REJECTED' ? 'Rejected' : 'Reject Candidate'}
+              </Button>
+            </div>
+
             <Button
               type="submit"
               variant="primary"

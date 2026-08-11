@@ -48,8 +48,10 @@ export const evaluatorApi = {
   /**
    * GET /api/evaluator/hackathon-submissions
    */
-  async getHackathonSubmissions() {
-    const response = await httpClient.get('/evaluator/hackathon-submissions');
+  async getHackathonSubmissions(status) {
+    const params = {};
+    if (status && status !== 'ALL') params.status = status;
+    const response = await httpClient.get('/evaluator/hackathon-submissions', { params });
     return response.data?.content || response.data?.items || response.data || [];
   },
 
@@ -78,6 +80,38 @@ export const evaluatorApi = {
    */
   async evaluateHackathonSubmission(id, evaluationData) {
     const response = await httpClient.post(`/evaluator/hackathon-submissions/${id}/evaluate`, evaluationData);
+    return response.data;
+  },
+
+  /**
+   * POST /api/evaluator/hackathon-submissions/:id/shortlist
+   */
+  async shortlistHackathonSubmission(id) {
+    const response = await httpClient.post(`/evaluator/hackathon-submissions/${id}/shortlist`);
+    return response.data;
+  },
+
+  /**
+   * POST /api/evaluator/hackathon-submissions/:id/reject
+   */
+  async rejectHackathonSubmission(id) {
+    const response = await httpClient.post(`/evaluator/hackathon-submissions/${id}/reject`);
+    return response.data;
+  },
+
+  /**
+   * POST /api/evaluator/synopsis/:id/shortlist
+   */
+  async shortlistSynopsis(id) {
+    const response = await httpClient.post(`/evaluator/synopsis/${id}/shortlist`);
+    return response.data;
+  },
+
+  /**
+   * POST /api/evaluator/synopsis/:id/reject
+   */
+  async rejectSynopsis(id) {
+    const response = await httpClient.post(`/evaluator/synopsis/${id}/reject`);
     return response.data;
   },
 };

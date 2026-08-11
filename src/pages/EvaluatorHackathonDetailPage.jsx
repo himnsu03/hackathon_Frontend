@@ -7,7 +7,7 @@ import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { TextArea } from '../components/common/TextArea';
 import { Badge } from '../components/common/Badge';
-import { ArrowLeft, Terminal, GitBranch, Globe, Award, Send, Loader2, Lightbulb, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Terminal, GitBranch, Globe, Award, Send, Loader2, Lightbulb, ExternalLink, CheckCircle2, XCircle } from 'lucide-react';
 
 export const EvaluatorHackathonDetailPage = () => {
   const { id } = useParams();
@@ -15,6 +15,7 @@ export const EvaluatorHackathonDetailPage = () => {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [submission, setSubmission] = useState(null);
   const [criteria, setCriteria] = useState([]);
   const [scores, setScores] = useState({});
@@ -106,6 +107,32 @@ export const EvaluatorHackathonDetailPage = () => {
     }
   };
 
+  const handleShortlist = async () => {
+    setActionLoading(true);
+    try {
+      const updated = await evaluatorApi.shortlistHackathonSubmission(id);
+      setSubmission((prev) => (updated ? updated : { ...prev, status: 'SHORTLISTED' }));
+      toast.success(`Hackathon project for ${submission?.candidateName || 'Candidate'} shortlisted successfully!`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to shortlist hackathon project.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    setActionLoading(true);
+    try {
+      const updated = await evaluatorApi.rejectHackathonSubmission(id);
+      setSubmission((prev) => (updated ? updated : { ...prev, status: 'REJECTED' }));
+      toast.error(`Hackathon project for ${submission?.candidateName || 'Candidate'} rejected.`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reject hackathon project.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center">
@@ -130,7 +157,7 @@ export const EvaluatorHackathonDetailPage = () => {
       <Card
         title={`Project Submission Review: ${submission?.candidateName || 'Candidate'}`}
         subtitle={`Submission ID: ${submission?.submissionId || 'N/A'}`}
-        headerAction={<Badge status="SHORTLISTED" className="bg-emerald-500/10 text-emerald-400" />}
+        headerAction={<Badge status={submission?.status || 'SUBMITTED'} />}
       >
         <div className="space-y-6">
           {/* Track Problem Statement */}
@@ -146,14 +173,14 @@ export const EvaluatorHackathonDetailPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
               <span className="text-[10px] font-mono text-slate-400 font-bold uppercase block">Source Code Repository</span>
-              {submission?.githubUrl ? (
+              {submission?.githubUrl || submission?.githubRepoUrl ? (
                 <a
-                  href={submission.githubUrl}
+                  href={submission.githubUrl || submission.githubRepoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-xs font-mono font-bold text-orange-400 hover:text-orange-300 transition-colors break-all"
                 >
-                  <GitBranch className="w-4 h-4 shrink-0" /> {submission.githubUrl} <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                  <GitBranch className="w-4 h-4 shrink-0" /> {submission.githubUrl || submission.githubRepoUrl} <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                 </a>
               ) : (
                 <span className="text-xs text-slate-500 font-mono">No repository URL provided</span>
@@ -179,7 +206,7 @@ export const EvaluatorHackathonDetailPage = () => {
 
           {/* Timestamp */}
           <div className="text-xs text-slate-400 font-mono">
-            Submitted At: <strong className="text-slate-200">{submission?.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'Recorded'}</strong>
+            Submitted At: <strong className="text-slate-200">{submission?.submittedAt || submission?.submissionTime ? new Date(submission.submittedAt || submission.submissionTime).toLocaleString() : 'Recorded'}</strong>
           </div>
         </div>
       </Card>
@@ -187,7 +214,7 @@ export const EvaluatorHackathonDetailPage = () => {
       {/* Scoring Form Card */}
       <Card
         title="Evaluator Scoring & Project Review"
-        subtitle={alreadyEvaluated ? 'You have evaluated this submission (you can update your scores below).' : 'Rate code implementation, functionality, UI/UX, and live demo'}
+        subtitle={alreadyEvaluated ? 'You have evaluated this submission (you can update scores or shortlist state below).' : 'Rate code implementation, functionality, UI/UX, and live demo'}
       >
         <form onSubmit={handleSubmitScore} className="space-y-6">
           <div className="space-y-4">
@@ -230,7 +257,35 @@ export const EvaluatorHackathonDetailPage = () => {
             placeholder="Write evaluation feedback regarding code quality, repository structure, features, and live demo UX..."
           />
 
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="success"
+                size="md"
+                icon={CheckCircle2}
+                loading={actionLoading}
+                disabled={submission?.status === 'SHORTLISTED'}
+                onClick={handleShortlist}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+              >
+                {submission?.status === 'SHORTLISTED' ? 'Shortlisted' : 'Shortlist Hackathon Project'}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                icon={XCircle}
+                loading={actionLoading}
+                disabled={submission?.status === 'REJECTED'}
+                onClick={handleReject}
+                className="border-rose-500/50 text-rose-400 hover:bg-rose-950/60 font-semibold"
+              >
+                {submission?.status === 'REJECTED' ? 'Rejected' : 'Reject Project'}
+              </Button>
+            </div>
+
             <Button
               type="submit"
               variant="primary"

@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { evaluatorApi } from '../services/evaluatorApi';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
+import { Select } from '../components/common/Select';
 import { Badge } from '../components/common/Badge';
-import { Terminal, Loader2, GitBranch, ExternalLink, ChevronRight, Star } from 'lucide-react';
+import { Terminal, Loader2, GitBranch, ExternalLink, ChevronRight, Star, Filter } from 'lucide-react';
 
 export const EvaluatorHackathonListPage = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export const EvaluatorHackathonListPage = () => {
 
   const [loading, setLoading] = useState(true);
   const [submissions, setSubmissions] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -29,6 +31,10 @@ export const EvaluatorHackathonListPage = () => {
     fetchSubmissions();
   }, []);
 
+  const filteredSubmissions = submissions.filter((s) => {
+    return statusFilter === 'ALL' || s.status === statusFilter;
+  });
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
@@ -43,6 +49,23 @@ export const EvaluatorHackathonListPage = () => {
         </div>
       </div>
 
+      {/* Filter Controls Card */}
+      <Card>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0">
+            <Filter className="w-4 h-4 text-orange-400" /> Filter:
+          </div>
+          <div className="flex-1 w-full max-w-xs">
+            <Select
+              label="Submission Status"
+              options={['ALL', 'SUBMITTED', 'IN_PROGRESS', 'SHORTLISTED', 'REJECTED', 'NOT_STARTED']}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            />
+          </div>
+        </div>
+      </Card>
+
       {/* Main Submissions Table */}
       <Card title="Submitted Coding Projects" subtitle="Click any candidate row to review repository and rate project">
         {loading ? (
@@ -50,9 +73,9 @@ export const EvaluatorHackathonListPage = () => {
             <Loader2 className="w-8 h-8 animate-spin text-orange-500 mb-2" />
             <p className="text-xs text-slate-400">Loading hackathon submissions...</p>
           </div>
-        ) : submissions.length === 0 ? (
+        ) : filteredSubmissions.length === 0 ? (
           <div className="py-12 text-center text-slate-400 text-xs">
-            No final hackathon project submissions available for evaluation yet.
+            No hackathon project submissions match the selected filter criteria.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -61,7 +84,7 @@ export const EvaluatorHackathonListPage = () => {
                 <tr>
                   <th className="px-4 py-3">Candidate Name</th>
                   <th className="px-4 py-3">Submission ID</th>
-                  <th className="px-4 py-3">Problem Statement</th>
+                  <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">GitHub Repo</th>
                   <th className="px-4 py-3">Project Score</th>
                   <th className="px-4 py-3">Submitted At</th>
@@ -69,7 +92,7 @@ export const EvaluatorHackathonListPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80">
-                {submissions.map((sub) => (
+                {filteredSubmissions.map((sub) => (
                   <tr
                     key={sub.id}
                     onClick={() => navigate(`/evaluator/hackathon-submissions/${sub.id}`)}
@@ -77,7 +100,9 @@ export const EvaluatorHackathonListPage = () => {
                   >
                     <td className="px-4 py-3.5 font-bold text-slate-100">{sub.candidateName || sub.fullName || 'Candidate'}</td>
                     <td className="px-4 py-3.5 font-mono text-orange-400 font-bold">{sub.submissionId || 'N/A'}</td>
-                    <td className="px-4 py-3.5 text-slate-300">{sub.problemStatementTitle || sub.problemStatementRef || 'General Track'}</td>
+                    <td className="px-4 py-3.5">
+                      <Badge status={sub.status || 'SUBMITTED'} />
+                    </td>
                     <td className="px-4 py-3.5">
                       {sub.githubUrl || sub.githubRepoUrl ? (
                         <a
