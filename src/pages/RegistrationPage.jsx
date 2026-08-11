@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../services/authApi';
+import { candidateApi } from '../services/candidateApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Input } from '../components/common/Input';
 import { Select } from '../components/common/Select';
 import { Button } from '../components/common/Button';
-import { User, Mail, Phone, Lock, GraduationCap, Building2, Briefcase, CheckCircle2, ShieldAlert, X, Plus } from 'lucide-react';
+import { User, Mail, Phone, Lock, GraduationCap, Building2, Briefcase, CheckCircle2, ShieldAlert, X, Plus, Upload, FileText } from 'lucide-react';
 
 const POPULAR_TECH_STACKS = ['React', 'Node.js', 'Python', 'Java', 'TypeScript', 'Go', 'Docker', 'AWS', 'Flutter', 'TailwindCSS'];
 
@@ -34,6 +35,8 @@ export const RegistrationPage = () => {
 
   const [techStack, setTechStack] = useState(['React', 'Node.js']);
   const [customTag, setCustomTag] = useState('');
+  const [resumeFile, setResumeFile] = useState(null);
+  const [resumeError, setResumeError] = useState('');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
@@ -58,11 +61,14 @@ export const RegistrationPage = () => {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
+    
+    const cleanPhone = formData.phone.trim().replace(/^(\+91|91)/, '').replace(/\D/g, '');
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
-    } else if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
-      newErrors.phone = 'Phone number must be exactly 10 digits';
+    } else if (cleanPhone.length !== 10) {
+      newErrors.phone = 'Please enter a valid 10-digit mobile number (e.g. 9876543210)';
     }
+
     if (!formData.college.trim()) newErrors.college = 'College/University name is required';
     if (!formData.password) {
       newErrors.password = 'Password is required';
@@ -85,11 +91,12 @@ export const RegistrationPage = () => {
 
     setLoading(true);
     try {
+      const cleanPhone = formData.phone.trim().replace(/^(\+91|91)/, '').replace(/\D/g, '');
       const res = await authApi.register({
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
         password: formData.password,
-        phone: formData.phone.trim(),
+        phone: cleanPhone,
         college: formData.college.trim(),
         gradYear: formData.gradYear,
         experience: formData.experience,
@@ -98,13 +105,28 @@ export const RegistrationPage = () => {
 
       // Automatically log in the candidate upon successful registration
       try {
-        if (res && res.token && res.user) {
-          login(res.token, res.user);
-        } else {
+        let activeToken = res?.token;
+        let activeUser = res?.user;
+        if (!activeToken || !activeUser) {
           const loginRes = await authApi.login(formData.email.trim(), formData.password);
-          login(loginRes.token, loginRes.user);
+          activeToken = loginRes.token;
+          activeUser = loginRes.user;
         }
-        toast.success(`Registration successful! Welcome, ${formData.fullName.trim()}!`);
+        login(activeToken, activeUser);
+
+        // Upload resume if attached during registration
+        if (resumeFile) {
+          try {
+            await candidateApi.uploadResume(resumeFile);
+            toast.success(`Registration & Resume Upload successful! Welcome, ${formData.fullName.trim()}!`);
+          } catch (uploadErr) {
+            console.error('[Registration Resume Upload Error]', uploadErr);
+            toast.warning('Registration completed, but resume upload failed. You can upload it from your dashboard.');
+          }
+        } else {
+          toast.success(`Registration successful! Welcome, ${formData.fullName.trim()}!`);
+        }
+
         navigate('/synopsis', { replace: true });
       } catch (loginErr) {
         toast.success('Registration successful! Please log in with your credentials.');
@@ -283,6 +305,49 @@ export const RegistrationPage = () => {
                   ))}
                 </div>
                 {errors.techStack && <p className="text-xs text-rose-400 mt-1">• {errors.techStack}</p>}
+              </div>
+
+              {/* Resume Upload Box */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-orange-400" /> Resume / CV Document (Optional)
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono">PDF, DOC, DOCX (Max 10MB)</span>
+                </label>
+                <div className="relative border-2 border-dashed border-slate-800 hover:border-orange-500/50 bg-slate-900/60 rounded-xl p-4 transition-colors text-center">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 10 * 1024 * 1024) {
+                          setResumeError('File size exceeds 10MB limit.');
+                          setResumeFile(null);
+                        } else {
+                          setResumeError('');
+                          setResumeFile(file);
+                        }
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className="flex flex-col items-center justify-center gap-1">
+                    <Upload className="w-5 h-5 text-orange-400 mb-1" />
+                    {resumeFile ? (
+                      <span className="text-xs font-bold text-emerald-400 flex items-center gap-1 font-mono">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Selected: {resumeFile.name} ({(resumeFile.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    ) : (
+                      <>
+                        <span className="text-xs font-semibold text-slate-200">Click or drag & drop to upload resume</span>
+                        <span className="text-[11px] text-slate-400">PDF, DOC or DOCX up to 10MB</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {resumeError && <p className="text-xs text-rose-400 mt-1">• {resumeError}</p>}
               </div>
             </div>
           </div>

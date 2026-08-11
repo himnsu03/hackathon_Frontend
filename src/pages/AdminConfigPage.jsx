@@ -19,17 +19,11 @@ export const AdminConfigPage = ({ embedded = false }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [form, setForm] = useState({
-    title: 'StackHack 2.0 Enterprise Hackathon',
-    registrationStartDate: '',
-    registrationEndDate: '',
     synopsisStartDate: '',
     synopsisDeadline: '',
-    shortlistDate: '',
     hackathonStartDate: '',
     hackathonEndDate: '',
-    durationHours: 24,
-    rules: '1. All code must be developed during the hackathon window.\n2. Open source libraries are permitted with proper attribution.\n3. Plagiarism results in immediate disqualification.',
-    evaluationCriteria: '1. Technical Architecture & Code Quality (25%)\n2. Innovation & Problem Solving (25%)\n3. Completeness & Edge-Case Handling (25%)\n4. UI/UX & Live Demo Presentation (25%)',
+    durationHours: '',
   });
 
   useEffect(() => {
@@ -37,20 +31,19 @@ export const AdminConfigPage = ({ embedded = false }) => {
       try {
         const data = await adminApi.getConfig();
         if (data) {
-          setConfigId(data.id || null);
-          setStatus(data.status === 'PUBLISHED' || data.active ? 'SHORTLISTED' : 'NOT_SUBMITTED');
+          const toLocal = (iso) => {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return '';
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          };
           setForm({
-            title: data.title || form.title,
-            registrationStartDate: data.registrationStartDate || '',
-            registrationEndDate: data.registrationEndDate || '',
-            synopsisStartDate: data.synopsisStartDate || '',
-            synopsisDeadline: data.synopsisDeadline || '',
-            shortlistDate: data.shortlistDate || '',
-            hackathonStartDate: data.hackathonStartDate || '',
-            hackathonEndDate: data.hackathonEndDate || '',
-            durationHours: data.durationHours || 24,
-            rules: data.rules || form.rules,
-            evaluationCriteria: data.evaluationCriteria || form.evaluationCriteria,
+            synopsisStartDate: toLocal(data.synopsisStartDate),
+            synopsisDeadline: toLocal(data.synopsisDeadline),
+            hackathonStartDate: toLocal(data.hackathonStartDate),
+            hackathonEndDate: toLocal(data.hackathonEndDate),
+            durationHours: data.durationHours || '',
           });
         }
       } catch (err) {
@@ -67,16 +60,10 @@ export const AdminConfigPage = ({ embedded = false }) => {
     e?.preventDefault();
     setSaving(true);
     try {
-      if (configId) {
-        await adminApi.updateConfig(configId, form);
-        toast.success('Draft hackathon configuration updated successfully!');
-      } else {
-        const res = await adminApi.createConfig(form);
-        if (res?.id) setConfigId(res.id);
-        toast.success('Hackathon configuration draft saved successfully!');
-      }
+      await adminApi.updateConfig(null, form);
+      toast.success('Hackathon configuration saved successfully!');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save configuration draft.');
+      toast.error(err.response?.data?.message || 'Failed to save configuration.');
     } finally {
       setSaving(false);
     }
@@ -86,13 +73,9 @@ export const AdminConfigPage = ({ embedded = false }) => {
     setShowConfirmModal(false);
     setPublishing(true);
     try {
-      const idToPublish = configId || (await adminApi.createConfig(form))?.id;
-      if (idToPublish) {
-        await adminApi.publishConfig(idToPublish);
-        setConfigId(idToPublish);
-        setStatus('SHORTLISTED');
-        toast.success('Hackathon configuration published and activated live!');
-      }
+      await adminApi.updateConfig(null, form);
+      setStatus('SHORTLISTED');
+      toast.success('Hackathon configuration published and activated live!');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to publish hackathon configuration.');
     } finally {
@@ -132,41 +115,10 @@ export const AdminConfigPage = ({ embedded = false }) => {
 
       {/* Main Configuration Form Card */}
       <Card
-        title="Event Lifecycle & Rules Settings"
-        subtitle="Fill in dates and guidelines then save draft or publish live"
-        headerAction={
-          embedded ? (
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-slate-400">Status:</span>
-              <Badge status={status === 'SHORTLISTED' ? 'SHORTLISTED' : 'NOT_SUBMITTED'} />
-            </div>
-          ) : null
-        }
+        title="Hackathon Timeline Configuration"
+        subtitle="Set synopsis and hackathon dates and coding duration"
       >
         <form onSubmit={handleSave} className="space-y-6">
-          <Input
-            label="Hackathon Event Title"
-            required
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="e.g. StackHack 2.0 Enterprise Challenge"
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Registration Start Date"
-              type="datetime-local"
-              value={form.registrationStartDate}
-              onChange={(e) => setForm({ ...form, registrationStartDate: e.target.value })}
-            />
-            <Input
-              label="Registration End Date"
-              type="datetime-local"
-              value={form.registrationEndDate}
-              onChange={(e) => setForm({ ...form, registrationEndDate: e.target.value })}
-            />
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Synopsis Submission Start Date"
@@ -182,13 +134,7 @@ export const AdminConfigPage = ({ embedded = false }) => {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Input
-              label="Shortlist Announcement Date"
-              type="datetime-local"
-              value={form.shortlistDate}
-              onChange={(e) => setForm({ ...form, shortlistDate: e.target.value })}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Hackathon Start Date"
               type="datetime-local"
@@ -204,50 +150,24 @@ export const AdminConfigPage = ({ embedded = false }) => {
           </div>
 
           <Input
-            label="Hackathon Duration / Time"
-            type="text"
+            label="Hackathon Duration (Hours)"
+            type="number"
+            min={1}
             required
-            value={form.durationHours || ''}
+            value={form.durationHours}
             onChange={(e) => setForm({ ...form, durationHours: e.target.value })}
-            placeholder="e.g. 24 Hours, 02:30, or 36"
+            placeholder="e.g. 24"
           />
 
-          <TextArea
-            label="Rules & Regulations"
-            rows={5}
-            value={form.rules}
-            onChange={(e) => setForm({ ...form, rules: e.target.value })}
-            placeholder="Specify candidate conduct policies, repository guidelines, and anti-plagiarism rules..."
-          />
-
-          <TextArea
-            label="Evaluation Criteria"
-            rows={5}
-            value={form.evaluationCriteria}
-            onChange={(e) => setForm({ ...form, evaluationCriteria: e.target.value })}
-            placeholder="Detail scoring breakdown for evaluators (e.g. Technical Architecture, UI Polish, Edge Cases)..."
-          />
-
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-end pt-4 border-t border-slate-800">
             <Button
               type="submit"
-              variant="secondary"
+              variant="primary"
               size="md"
               icon={Save}
               loading={saving}
             >
-              Save Draft Config
-            </Button>
-
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              icon={Send}
-              loading={publishing}
-              onClick={() => setShowConfirmModal(true)}
-            >
-              Publish Configuration
+              Save Configuration
             </Button>
           </div>
         </form>

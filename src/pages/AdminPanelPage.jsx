@@ -5,6 +5,7 @@ import { problemStatementService } from '../services/problemStatementService';
 import { hackathonConfigService } from '../services/hackathonConfigService';
 import { AdminConfigPage } from './AdminConfigPage';
 import { AdminEvaluatorsPage } from './AdminEvaluatorsPage';
+import { AdminProblemStatementsPage } from './AdminProblemStatementsPage';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -333,6 +334,19 @@ export const AdminPanelPage = () => {
             >
               Evaluators
             </button>
+            <button
+              onClick={() => {
+                setActiveTab('problems');
+                fetchProblemStatements();
+              }}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'problems'
+                  ? 'bg-orange-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Problem Statements
+            </button>
           </div>
         </div>
       </div>
@@ -341,6 +355,8 @@ export const AdminPanelPage = () => {
         <AdminConfigPage embedded />
       ) : activeTab === 'evaluators' ? (
         <AdminEvaluatorsPage embedded />
+      ) : activeTab === 'problems' ? (
+        <AdminProblemStatementsPage embedded />
       ) : activeTab === 'synopses' ? (
         /* Tab 1: Synopsis Proposals Review */
         <Card

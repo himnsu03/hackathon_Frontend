@@ -1,16 +1,29 @@
-// Service for managing Global Hackathon Configuration & Admin Deadlines
+import { httpClient } from './httpClient';
 
 const CONFIG_STORAGE_KEY = 'hackathon_global_config';
 
 const DEFAULT_CONFIG = {
-  synopsisDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-  projectSubmissionDeadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+  synopsisStartDate: null,
+  synopsisDeadline: null,
+  hackathonStartDate: null,
+  hackathonEndDate: null,
   durationHours: 24,
-  hackathonTitle: 'StackHack 2.0 Hackathon',
-  autoLockExpired: true,
 };
 
 export const hackathonConfigService = {
+  async fetchPublicConfig() {
+    try {
+      const response = await httpClient.get('/public/hackathon-config');
+      if (response.data) {
+        localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(response.data));
+        return response.data;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch public hackathon config from backend:', e?.message);
+    }
+    return this.getConfig();
+  },
+
   getConfig() {
     try {
       const stored = localStorage.getItem(CONFIG_STORAGE_KEY);
@@ -20,7 +33,6 @@ export const hackathonConfigService = {
     } catch (e) {
       console.error('Error reading hackathon config from localStorage:', e);
     }
-    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(DEFAULT_CONFIG));
     return DEFAULT_CONFIG;
   },
 

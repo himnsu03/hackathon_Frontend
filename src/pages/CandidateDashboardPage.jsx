@@ -32,6 +32,7 @@ export const CandidateDashboardPage = () => {
   const location = useLocation();
 
   const [dashboardData, setDashboardData] = useState(null);
+  const [globalConfig, setGlobalConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [expandedRule, setExpandedRule] = useState(null);
@@ -56,16 +57,27 @@ export const CandidateDashboardPage = () => {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const data = await candidateApi.getDashboard();
-        setDashboardData(data);
-        if (data?.user?.resume) {
-          setResumeInfo(data.user.resume);
-        } else {
-          const localResume = await candidateApi.getResumeInfo();
-          if (localResume) setResumeInfo(localResume);
+        const [data, configData] = await Promise.allSettled([
+          candidateApi.getDashboard(),
+          hackathonConfigService.fetchPublicConfig(),
+        ]);
+
+        if (configData.status === 'fulfilled' && configData.value) {
+          setGlobalConfig(configData.value);
         }
-        if (data.synopsisStatus && user) {
-          updateUser({ synopsisStatus: data.synopsisStatus, submissionId: data.user.submissionId });
+
+        if (data.status === 'fulfilled' && data.value) {
+          const dash = data.value;
+          setDashboardData(dash);
+          if (dash?.user?.resume) {
+            setResumeInfo(dash.user.resume);
+          } else {
+            const localResume = await candidateApi.getResumeInfo();
+            if (localResume) setResumeInfo(localResume);
+          }
+          if (dash.synopsisStatus && user) {
+            updateUser({ synopsisStatus: dash.synopsisStatus, submissionId: dash.user.submissionId });
+          }
         }
       } catch (err) {
         console.error('[Dashboard Fetch Error]', err);
@@ -161,7 +173,7 @@ export const CandidateDashboardPage = () => {
                 <span className="text-[11px] font-bold text-slate-400 uppercase block mb-1">
                   Synopsis Deadline
                 </span>
-                <CountdownTimer targetDate={hackathonConfigService.getConfig()?.synopsisDeadline || dashboardData?.submissionDeadline} />
+                <CountdownTimer targetDate={globalConfig?.synopsisDeadline || hackathonConfigService.getConfig()?.synopsisDeadline || dashboardData?.submissionDeadline} />
               </div>
             )}
           </div>

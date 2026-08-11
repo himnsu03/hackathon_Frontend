@@ -2,10 +2,10 @@ import { httpClient } from './httpClient';
 
 export const evaluatorApi = {
   /**
-   * Get public hackathon config (evaluation criteria)
+   * Get public hackathon config
    */
   async getPublicConfig() {
-    const response = await httpClient.get('/config/public');
+    const response = await httpClient.get('/public/hackathon-config');
     return response.data || {};
   },
 

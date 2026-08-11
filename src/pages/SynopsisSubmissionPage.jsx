@@ -4,12 +4,13 @@ import { synopsisApi } from '../services/synopsisApi';
 import { problemStatementApi } from '../services/problemStatementApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { Input } from '../components/common/Input';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { TextArea } from '../components/common/TextArea';
 import { CountdownTimer } from '../components/common/CountdownTimer';
-import { FileText, Send, CheckCircle2, Loader2, ArrowLeft, Lightbulb, Check, RefreshCw, Lock } from 'lucide-react';
+import { FileText, Send, CheckCircle2, Loader2, ArrowLeft, Lightbulb, Check, RefreshCw, Lock, ListChecks, Package, Target } from 'lucide-react';
 
 export const SynopsisSubmissionPage = () => {
   const navigate = useNavigate();
@@ -80,7 +81,7 @@ export const SynopsisSubmissionPage = () => {
         content,
       });
       toast.success(res.message || `Synopsis proposal for ${selectedProblemId} submitted successfully!`);
-      
+
       updateUser({ synopsisStatus: 'PENDING' });
       setIsEditing(false);
 
@@ -150,11 +151,11 @@ export const SynopsisSubmissionPage = () => {
 
             {isSubmitted ? (
               <div className="p-4 bg-gradient-to-r from-slate-950 to-orange-950/40 border border-orange-500/30 rounded-xl space-y-1">
-                <span className="text-[10px] font-mono text-orange-400 font-bold uppercase">{selectedProblem?.id}</span>
-                <h4 className="text-sm font-bold text-slate-100">{selectedProblem?.title || 'Smart Waste Management'}</h4>
-                <p className="text-xs text-slate-300">{selectedProblem?.description}</p>
+                <span className="text-[10px] font-mono text-orange-400 font-bold uppercase">{selectedProblem?.id || selectedProblemId}</span>
+                <h4 className="text-sm font-bold text-slate-100">{selectedProblem?.title || selectedProblemId || 'Selected Problem Track'}</h4>
+                {selectedProblem?.description && <p className="text-xs text-slate-300">{selectedProblem.description}</p>}
               </div>
-            ) : (
+            ) : problemStatements.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {problemStatements.map((ps) => {
                   const isSelected = selectedProblemId === ps.id;
@@ -163,11 +164,10 @@ export const SynopsisSubmissionPage = () => {
                       key={ps.id}
                       type="button"
                       onClick={() => setSelectedProblemId(ps.id)}
-                      className={`p-4 rounded-xl border text-left transition-all relative ${
-                        isSelected
-                          ? 'bg-orange-950/60 border-orange-500 text-slate-100 ring-2 ring-orange-500/40 shadow-lg'
-                          : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                      }`}
+                      className={`p-4 rounded-xl border text-left transition-all relative ${isSelected
+                        ? 'bg-orange-950/60 border-orange-500 text-slate-100 ring-2 ring-orange-500/40 shadow-lg'
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                        }`}
                     >
                       {isSelected && (
                         <span className="absolute top-3 right-3 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-slate-950">
@@ -178,26 +178,96 @@ export const SynopsisSubmissionPage = () => {
                       <h4 className="text-xs font-bold text-slate-100 mt-0.5">{ps.title}</h4>
                       <span className="text-[10px] text-slate-500 block mb-1 font-mono">{ps.category}</span>
                       <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{ps.description}</p>
+
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-slate-800/60">
+                        {ps.requirements?.length > 0 && (
+                          <span className="text-[9px] font-mono text-indigo-400 bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-800/40">
+                            {ps.requirements.length} Reqs
+                          </span>
+                        )}
+                        {ps.useCases?.length > 0 && (
+                          <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/40">
+                            {ps.useCases.length} Use Cases
+                          </span>
+                        )}
+                      </div>
                     </button>
                   );
                 })}
               </div>
+            ) : (
+              <Input
+                label="Problem Statement Title / Track Reference"
+                required
+                value={selectedProblemId}
+                onChange={(e) => setSelectedProblemId(e.target.value)}
+                placeholder="e.g. PS-01 Smart Waste Management System"
+              />
             )}
           </div>
 
           {/* Full Expanded View of Chosen Problem Statement */}
           {selectedProblem && (
-            <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
-              <span className="text-[10px] font-mono text-orange-400 font-bold uppercase tracking-wider block">
-                Selected Track Full Details: {selectedProblem.id}
-              </span>
-              <h4 className="text-sm font-bold text-slate-100">{selectedProblem.title}</h4>
-              <p className="text-xs text-slate-300 leading-relaxed">{selectedProblem.description}</p>
-              {selectedProblem.rules && (
-                <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400">
-                  <strong>Track Constraints:</strong> {selectedProblem.rules}
+            <div className="p-5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-4 shadow-inner">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                <div>
+                  <span className="text-[10px] font-mono text-orange-400 font-bold uppercase tracking-wider block">
+                    Selected Track Full Details: {selectedProblem.id}
+                  </span>
+                  <h4 className="text-base font-bold text-slate-100 mt-0.5">{selectedProblem.title}</h4>
                 </div>
-              )}
+                {selectedProblem.category && (
+                  <span className="text-[10px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-full w-max">
+                    {selectedProblem.category}
+                  </span>
+                )}
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1">
+                <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+                  Challenge Summary & Overview
+                </span>
+                <p className="text-xs text-slate-300 leading-relaxed font-sans">{selectedProblem.description}</p>
+              </div>
+
+              {/* Key Technical Requirements List */}
+              <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <ListChecks className="w-4 h-4 text-indigo-400" /> Key Technical Requirements & Guidelines ({selectedProblem.requirements?.length || 0})
+                </span>
+                {selectedProblem.requirements && selectedProblem.requirements.length > 0 ? (
+                  <ul className="space-y-1.5 pl-1">
+                    {selectedProblem.requirements.map((req, idx) => (
+                      <li key={idx} className="text-xs text-slate-300 flex items-start gap-2 leading-relaxed">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
+                        <span>{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-slate-500 italic pl-1">No technical requirements specified for this track.</p>
+                )}
+              </div>
+
+              {/* Real-World Use Cases List */}
+              <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Target className="w-4 h-4 text-emerald-400" /> Real-World Use Cases & Target Applications ({selectedProblem.useCases?.length || 0})
+                </span>
+                {selectedProblem.useCases && selectedProblem.useCases.length > 0 ? (
+                  <ul className="space-y-1.5 pl-1">
+                    {selectedProblem.useCases.map((uc, idx) => (
+                      <li key={idx} className="text-xs text-slate-300 flex items-start gap-2 leading-relaxed">
+                        <Target className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <span>{uc}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-slate-500 italic pl-1">No real-world use cases specified for this track.</p>
+                )}
+              </div>
             </div>
           )}
 
@@ -273,13 +343,14 @@ export const SynopsisSubmissionPage = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3">
                 {synopsisData?.submitted && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="lg"
                     onClick={() => setIsEditing(false)}
+                    className="w-full sm:w-auto shrink-0"
                   >
                     Cancel Editing
                   </Button>
@@ -294,7 +365,7 @@ export const SynopsisSubmissionPage = () => {
                   disabled={content.length < MIN_CHARS}
                   icon={Send}
                 >
-                  {synopsisData?.submitted ? 'Update Synopsis & Save Track' : 'Submit Synopsis For Evaluation'}
+                  {synopsisData?.submitted ? 'Update Synopsis' : 'Submit Synopsis For Evaluation'}
                 </Button>
               </div>
             </form>

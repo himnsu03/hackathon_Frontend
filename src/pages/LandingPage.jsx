@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { hackathonConfigService } from '../services/hackathonConfigService';
 import {
   Calendar,
   Clock,
@@ -19,6 +20,17 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
+
+const formatDate = (isoString, defaultText) => {
+  if (!isoString) return defaultText;
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return defaultText;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return defaultText;
+  }
+};
 
 const RulesAccordion = () => {
   const [openSection, setOpenSection] = useState(null);
@@ -96,6 +108,15 @@ const RulesAccordion = () => {
 export const LandingPage = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const [config, setConfig] = useState(null);
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      const data = await hackathonConfigService.fetchPublicConfig();
+      if (data) setConfig(data);
+    };
+    loadConfig();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100 selection:bg-orange-500 selection:text-white">
@@ -199,10 +220,10 @@ export const LandingPage = () => {
                     </div>
 
                     <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight mb-1">
-                      Registration Closes
+                      Registration Opens
                     </h3>
                     <p className="text-xl sm:text-2xl font-black text-sky-400 mb-2 drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]">
-                      Sept 15, 2026
+                      {formatDate(config?.synopsisStartDate, 'Sept 15, 2026')}
                     </p>
                     <p className="text-xs text-slate-400 leading-relaxed font-sans">
                       Open for all software engineers, students, and industry candidates worldwide.
@@ -240,7 +261,7 @@ export const LandingPage = () => {
                       Synopsis Submission
                     </h3>
                     <p className="text-lg sm:text-xl font-black text-amber-400 mb-2 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
-                      Sept 18 • 18:00 UTC
+                      {formatDate(config?.synopsisDeadline, 'Sept 18 • 18:00 UTC')}
                     </p>
                     <p className="text-xs text-slate-400 leading-relaxed font-sans">
                       Maximum 2,000 words project proposal submission required for manual review and shortlisting.
@@ -275,10 +296,10 @@ export const LandingPage = () => {
                     </div>
 
                     <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight mb-1">
-                      Live 24h Hackathon
+                      Live Hackathon Window
                     </h3>
                     <p className="text-xl sm:text-2xl font-black text-orange-400 mb-2 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]">
-                      Sept 25-26, 2026
+                      {config?.hackathonStartDate ? `${formatDate(config.hackathonStartDate)} - ${formatDate(config.hackathonEndDate)}` : 'Sept 25-26, 2026'}
                     </p>
                     <p className="text-xs text-slate-400 leading-relaxed font-sans">
                       Non-stop sprint. Public GitHub repository and live demo URL submission required.
@@ -316,7 +337,7 @@ export const LandingPage = () => {
                       Winners & Results
                     </h3>
                     <p className="text-xl sm:text-2xl font-black text-emerald-400 mb-2 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]">
-                      Oct 01, 2026
+                      {formatDate(config?.hackathonEndDate, 'Oct 01, 2026')}
                     </p>
                     <p className="text-xs text-slate-400 leading-relaxed font-sans">
                       Official winner declaration, cash prize distribution, and hiring fast-track calls.

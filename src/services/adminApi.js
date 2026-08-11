@@ -85,25 +85,37 @@ export const adminApi = {
 
   /**
    * Hackathon Config Endpoints
+   * Backend: PUT /admin/hackathon-config
    */
   async getConfig() {
-    const response = await httpClient.get('/admin/config');
+    const response = await httpClient.get('/admin/hackathon-config');
     return response.data;
   },
 
+  async updateConfig(_id, configData) {
+    // Backend expects java.time.Instant → full ISO-8601 with seconds and Z offset.
+    // datetime-local inputs produce "2026-08-11T11:58" which must become "2026-08-11T11:58:00Z".
+    const toInstant = (val) => {
+      if (!val) return null;
+      if (val.endsWith('Z') || (val.length > 19 && val.includes('+'))) return val;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    };
+
+    const payload = {
+      synopsisStartDate: toInstant(configData.synopsisStartDate),
+      synopsisDeadline: toInstant(configData.synopsisDeadline),
+      hackathonStartDate: toInstant(configData.hackathonStartDate),
+      hackathonEndDate: toInstant(configData.hackathonEndDate),
+      durationHours: parseInt(configData.durationHours, 10) || 24,
+    };
+    const response = await httpClient.put('/admin/hackathon-config', payload);
+    return response.data;
+  },
+
+  // createConfig aliases updateConfig (backend has single PUT, no POST create)
   async createConfig(configData) {
-    const response = await httpClient.post('/admin/config', configData);
-    return response.data;
-  },
-
-  async updateConfig(id, configData) {
-    const response = await httpClient.put(`/admin/config/${id}`, configData);
-    return response.data;
-  },
-
-  async publishConfig(id) {
-    const response = await httpClient.post(`/admin/config/${id}/publish`);
-    return response.data;
+    return this.updateConfig(null, configData);
   },
 
   /**
@@ -115,12 +127,54 @@ export const adminApi = {
   },
 
   async createProblemStatement(data) {
-    const response = await httpClient.post('/admin/problem-statements', data);
+    const slug = data.title ? data.title.toUpperCase().replace(/[^A-Z0-9]/g, '-').replace(/-+/g, '-').slice(0, 20) : 'TRACK';
+    const generatedId = `PS-${Math.floor(10 + Math.random() * 90)}-${slug}`;
+    const reqs = Array.isArray(data.requirements) 
+      ? data.requirements 
+      : (typeof data.requirements === 'string' ? data.requirements.split('\n').map(s => s.trim()).filter(Boolean) : (data.rules ? [data.rules] : []));
+    const delivs = Array.isArray(data.deliverables) 
+      ? data.deliverables 
+      : (typeof data.deliverables === 'string' ? data.deliverables.split('\n').map(s => s.trim()).filter(Boolean) : []);
+    const useCases = Array.isArray(data.useCases)
+      ? data.useCases
+      : (typeof data.useCases === 'string' ? data.useCases.split('\n').map(s => s.trim()).filter(Boolean) : []);
+
+    const payload = {
+      problemId: (data.problemId && data.problemId.trim()) ? data.problemId.trim() : generatedId,
+      title: data.title,
+      description: data.description,
+      active: true,
+      requirements: reqs,
+      deliverables: delivs,
+      useCases: useCases,
+    };
+    const response = await httpClient.post('/admin/problem-statements', payload);
     return response.data;
   },
 
   async updateProblemStatement(id, data) {
-    const response = await httpClient.put(`/admin/problem-statements/${id}`, data);
+    const slug = data.title ? data.title.toUpperCase().replace(/[^A-Z0-9]/g, '-').replace(/-+/g, '-').slice(0, 20) : 'TRACK';
+    const generatedId = `PS-${Math.floor(10 + Math.random() * 90)}-${slug}`;
+    const reqs = Array.isArray(data.requirements) 
+      ? data.requirements 
+      : (typeof data.requirements === 'string' ? data.requirements.split('\n').map(s => s.trim()).filter(Boolean) : (data.rules ? [data.rules] : []));
+    const delivs = Array.isArray(data.deliverables) 
+      ? data.deliverables 
+      : (typeof data.deliverables === 'string' ? data.deliverables.split('\n').map(s => s.trim()).filter(Boolean) : []);
+    const useCases = Array.isArray(data.useCases)
+      ? data.useCases
+      : (typeof data.useCases === 'string' ? data.useCases.split('\n').map(s => s.trim()).filter(Boolean) : []);
+
+    const payload = {
+      problemId: (data.problemId && data.problemId.trim()) ? data.problemId.trim() : (data.problem_id || generatedId),
+      title: data.title,
+      description: data.description,
+      active: data.active !== false,
+      requirements: reqs,
+      deliverables: delivs,
+      useCases: useCases,
+    };
+    const response = await httpClient.put(`/admin/problem-statements/${id}`, payload);
     return response.data;
   },
 
