@@ -33,20 +33,31 @@ export const adminApi = {
   },
 
   /**
+   * Get single synopsis detail for admin review
+   */
+  async getSynopsisById(id) {
+    const response = await httpClient.get(`/admin/synopsis/${id}`);
+    return response.data;
+  },
+
+  /**
    * Get all final project submissions (GitHub Repo & Live Demo URLs)
    */
   async getProjectSubmissions() {
-    try {
-      const response = await httpClient.get('/admin/synopsis/projects');
-      return response.data || [];
-    } catch {
-      return [];
-    }
+    const response = await httpClient.get('/admin/synopsis/projects');
+    return response.data || [];
+  },
+
+  /**
+   * Get single hackathon submission detail for admin review
+   */
+  async getHackathonSubmissionById(id) {
+    const response = await httpClient.get(`/admin/hackathon-submissions/${id}`);
+    return response.data;
   },
 
   /**
    * Shortlist candidate synopsis
-   * @param {string} synopsisId
    */
   async shortlistSynopsis(synopsisId) {
     const response = await httpClient.post(`/admin/synopsis/${synopsisId}/shortlist`);
@@ -55,7 +66,6 @@ export const adminApi = {
 
   /**
    * Reject candidate synopsis
-   * @param {string} synopsisId
    */
   async rejectSynopsis(synopsisId) {
     const response = await httpClient.post(`/admin/synopsis/${synopsisId}/reject`);
@@ -71,6 +81,106 @@ export const adminApi = {
     } else {
       return this.rejectSynopsis(synopsisId);
     }
+  },
+
+  /**
+   * Hackathon Config Endpoints
+   */
+  async getConfig() {
+    const response = await httpClient.get('/admin/config');
+    return response.data;
+  },
+
+  async createConfig(configData) {
+    const response = await httpClient.post('/admin/config', configData);
+    return response.data;
+  },
+
+  async updateConfig(id, configData) {
+    const response = await httpClient.put(`/admin/config/${id}`, configData);
+    return response.data;
+  },
+
+  async publishConfig(id) {
+    const response = await httpClient.post(`/admin/config/${id}/publish`);
+    return response.data;
+  },
+
+  /**
+   * Problem Statement Management Endpoints
+   */
+  async getProblemStatements() {
+    const response = await httpClient.get('/admin/problem-statements');
+    return response.data?.content || response.data?.items || response.data || [];
+  },
+
+  async createProblemStatement(data) {
+    const response = await httpClient.post('/admin/problem-statements', data);
+    return response.data;
+  },
+
+  async updateProblemStatement(id, data) {
+    const response = await httpClient.put(`/admin/problem-statements/${id}`, data);
+    return response.data;
+  },
+
+  async deactivateProblemStatement(id) {
+    const response = await httpClient.delete(`/admin/problem-statements/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Evaluator Management Endpoints
+   */
+  async getEvaluators() {
+    const response = await httpClient.get('/admin/evaluators');
+    return response.data?.content || response.data?.items || response.data || [];
+  },
+
+  async addEvaluator(data) {
+    const response = await httpClient.post('/admin/evaluators', data);
+    return response.data;
+  },
+
+  async revokeEvaluator(id) {
+    const response = await httpClient.delete(`/admin/evaluators/${id}`);
+    return response.data;
+  },
+
+  /**
+   * AI Evaluation & Full Review Endpoints for Synopsis
+   */
+  async getSynopsisAiEvaluation(synopsisId) {
+    const response = await httpClient.get(`/admin/synopsis/${synopsisId}/ai-evaluation`);
+    return response.data;
+  },
+
+  async runSynopsisAiEvaluate(synopsisId) {
+    const response = await httpClient.post(`/admin/synopsis/${synopsisId}/ai-evaluate`);
+    return response.data;
+  },
+
+  async getSynopsisFullReview(synopsisId) {
+    const response = await httpClient.get(`/admin/synopsis/${synopsisId}/full-review`);
+    return response.data?.evaluations || response.data || [];
+  },
+
+  /**
+   * AI Evaluation & Full Review Endpoints for Hackathon Submissions
+   */
+  async getHackathonAiEvaluation(submissionId) {
+    const response = await httpClient.get(`/admin/hackathon-submissions/${submissionId}/ai-evaluation`);
+    return response.data;
+  },
+
+  async runHackathonAiEvaluate(submissionId) {
+    const response = await httpClient.post(`/admin/hackathon-submissions/${submissionId}/ai-evaluate`);
+    return response.data;
+  },
+
+  async getHackathonFullReview(submissionId) {
+    const response = await httpClient.get(`/admin/hackathon-submissions/${submissionId}/full-review`);
+    return response.data?.evaluations || response.data || [];
   },
 
   /**

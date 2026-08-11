@@ -40,11 +40,14 @@ export const LoginPage = () => {
       toast.success(`Welcome back, ${res.user.fullName}!`);
 
       // Automatic Role-based Navigation
-      if (res.user.role === 'admin') {
+      const userRole = res.user?.role?.toLowerCase() || 'candidate';
+      if (userRole === 'admin') {
         navigate('/admin', { replace: true });
+      } else if (userRole === 'evaluator') {
+        navigate('/evaluator/synopsis', { replace: true });
       } else {
         const from = location.state?.from?.pathname || '/dashboard';
-        navigate(from, { replace: true });
+        navigate(from === '/dashboard' && userRole === 'evaluator' ? '/evaluator/synopsis' : from, { replace: true });
       }
     } catch (err) {
       const msg = err.response?.data?.message || 'Login failed. Invalid email or password.';

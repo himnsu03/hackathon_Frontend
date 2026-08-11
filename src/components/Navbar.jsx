@@ -15,12 +15,23 @@ export const Navbar = () => {
   };
 
   const isAdmin = user?.role === 'admin';
+  const isEvaluator = user?.role === 'evaluator';
+
+  const brandHomePath = !isAuthenticated
+    ? '/'
+    : isAdmin
+    ? '/admin'
+    : isEvaluator
+    ? '/evaluator/synopsis'
+    : '/dashboard';
 
   // Filter navigation items based on user role & authentication
   const allNavItems = [
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, role: 'candidate' },
     { label: 'Synopsis', path: '/synopsis', icon: FileText, role: 'candidate' },
     { label: 'Hackathon', path: '/hackathon', icon: Terminal, role: 'candidate', badge: user?.synopsisStatus === 'SHORTLISTED' ? 'Live' : null },
+    { label: 'Synopsis Reviews', path: '/evaluator/synopsis', icon: FileText, role: 'evaluator' },
+    { label: 'Hackathon Reviews', path: '/evaluator/hackathon', icon: Terminal, role: 'evaluator' },
     { label: 'Admin Panel', path: '/admin', icon: ShieldCheck, role: 'admin' },
     { label: 'Results', path: '/results', icon: Trophy, role: 'public' },
   ];
@@ -28,7 +39,8 @@ export const Navbar = () => {
   const visibleNavItems = allNavItems.filter((item) => {
     if (item.role === 'public') return true;
     if (!isAuthenticated) return false;
-    if (isAdmin) return item.role === 'admin';
+    if (isAdmin) return item.role === 'admin' || item.role === 'evaluator';
+    if (isEvaluator) return item.role === 'evaluator';
     return item.role === 'candidate';
   });
 
@@ -52,9 +64,9 @@ export const Navbar = () => {
           </a>
 
           <Link
-            to="/"
+            to={brandHomePath}
             className="hidden sm:flex flex-col justify-center border-l border-slate-700/80 pl-3.5 py-0.5 group transition-transform hover:scale-[1.02]"
-            title="Go to Hackathon Home Page"
+            title="Go to Portal Home"
           >
             <span className="font-extrabold text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-orange-200 to-slate-300 leading-tight">
               Xathon<span className="text-orange-500">Portal</span>

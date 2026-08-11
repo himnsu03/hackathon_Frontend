@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { adminApi } from '../services/adminApi';
 import { problemStatementService } from '../services/problemStatementService';
 import { hackathonConfigService } from '../services/hackathonConfigService';
+import { AdminConfigPage } from './AdminConfigPage';
+import { AdminEvaluatorsPage } from './AdminEvaluatorsPage';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -30,12 +33,16 @@ import {
   Clock,
   Settings,
   Save,
+  Sparkles,
+  UserCheck,
+  Lightbulb,
 } from 'lucide-react';
 
 export const AdminPanelPage = () => {
+  const navigate = useNavigate();
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState('synopsis'); // synopsis | projects | problems | config | results
+  const [activeTab, setActiveTab] = useState('results'); // results | config | evaluators
 
   // Tab 1 State: Synopsis Table
   const [synopses, setSynopses] = useState([]);
@@ -290,65 +297,9 @@ export const AdminPanelPage = () => {
           <h1 className="text-2xl font-extrabold text-slate-100 mt-2">Hackathon Management Console</h1>
         </div>
 
-        {/* Navigation Tabs & Refresh */}
+        {/* Navigation Tabs */}
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={RefreshCw}
-            onClick={() => {
-              fetchSynopses();
-              fetchProjectSubmissions();
-              fetchAllCandidates();
-            }}
-            title="Refresh All Data"
-          >
-            Refresh
-          </Button>
           <div className="flex flex-wrap items-center gap-1.5 bg-slate-900/80 p-1.5 rounded-xl border border-slate-800">
-            <button
-              onClick={() => setActiveTab('synopsis')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'synopsis'
-                  ? 'bg-orange-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Synopsis Review
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('projects');
-                fetchProjectSubmissions();
-              }}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'projects'
-                  ? 'bg-orange-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Project Submissions
-            </button>
-            <button
-              onClick={() => setActiveTab('problems')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'problems'
-                  ? 'bg-orange-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Problem Statements
-            </button>
-            <button
-              onClick={() => setActiveTab('config')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'config'
-                  ? 'bg-orange-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Deadlines & Duration
-            </button>
             <button
               onClick={() => {
                 setActiveTab('results');
@@ -362,11 +313,35 @@ export const AdminPanelPage = () => {
             >
               Declare Results
             </button>
+            <button
+              onClick={() => setActiveTab('config')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'config'
+                  ? 'bg-orange-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Event Config
+            </button>
+            <button
+              onClick={() => setActiveTab('evaluators')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'evaluators'
+                  ? 'bg-orange-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Evaluators
+            </button>
           </div>
         </div>
       </div>
 
-      {activeTab === 'synopsis' ? (
+      {activeTab === 'config' ? (
+        <AdminConfigPage embedded />
+      ) : activeTab === 'evaluators' ? (
+        <AdminEvaluatorsPage embedded />
+      ) : activeTab === 'synopses' ? (
         /* Tab 1: Synopsis Proposals Review */
         <Card
           title="Candidate Synopsis Proposals"
@@ -439,6 +414,16 @@ export const AdminPanelPage = () => {
                                 Proposal
                                 {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                               </button>
+                              <Link to={`/admin/synopsis/${item.id}`}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  icon={Sparkles}
+                                  className="text-amber-400 hover:bg-amber-500/10"
+                                >
+                                  AI & Scores
+                                </Button>
+                              </Link>
                               {item.synopsisStatus !== 'SHORTLISTED' && (
                                 <Button
                                   variant="outline"
@@ -514,6 +499,7 @@ export const AdminPanelPage = () => {
                     <th className="py-3 px-4">Live App Demo</th>
                     <th className="py-3 px-4">Status</th>
                     <th className="py-3 px-4">Submitted At</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
@@ -571,6 +557,18 @@ export const AdminPanelPage = () => {
                       </td>
                       <td className="py-3.5 px-4 text-slate-400 font-mono">
                         {item.submissionTime ? new Date(item.submissionTime).toLocaleString() : 'In Progress'}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <Link to={`/admin/hackathon-submissions/${item.id}`}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={Sparkles}
+                            className="text-amber-400 hover:bg-amber-500/10"
+                          >
+                            AI & Scores
+                          </Button>
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -704,80 +702,6 @@ export const AdminPanelPage = () => {
               )}
             </Card>
           </div>
-        </div>
-      ) : activeTab === 'config' ? (
-        /* Tab 4: Hackathon Deadlines & Coding Duration Settings */
-        <div className="max-w-2xl mx-auto space-y-6">
-          <Card
-            title="Hackathon Deadlines & Duration Settings"
-            subtitle="Configure candidate synopsis submission deadline and main hackathon coding window duration"
-          >
-            <form onSubmit={handleSaveConfig} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-orange-400" /> Synopsis Submission Deadline Date & Time
-                </label>
-                <input
-                  type="datetime-local"
-                  value={synopsisDeadlineInput}
-                  onChange={(e) => setSynopsisDeadlineInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-orange-500 transition-colors"
-                  required
-                />
-                <p className="text-[11px] text-slate-400">
-                  Candidates will see a live ticking countdown timer to this exact deadline when submitting proposals.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-emerald-400" /> Final Hackathon Project Submission Hard Deadline
-                </label>
-                <input
-                  type="datetime-local"
-                  value={projectDeadlineInput}
-                  onChange={(e) => setProjectDeadlineInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-orange-500 transition-colors"
-                />
-                <p className="text-[11px] text-slate-400">
-                  Global event hard lock date & time for all project submissions (GitHub Repo & Live Demo Links).
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-400" /> Hackathon Coding Duration (Hours)
-                </label>
-                <select
-                  value={durationHoursInput}
-                  onChange={(e) => setDurationHoursInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-orange-500 cursor-pointer"
-                >
-                  <option value={2}>2 Hours (Express Sprint)</option>
-                  <option value={6}>6 Hours (Mini Hackathon)</option>
-                  <option value={12}>12 Hours (Overnight Track)</option>
-                  <option value={24}>24 Hours (Standard Flagship)</option>
-                  <option value={36}>36 Hours (Expanded Track)</option>
-                  <option value={48}>48 Hours (Weekend Championship)</option>
-                </select>
-                <p className="text-[11px] text-slate-400">
-                  When a shortlisted candidate starts their timer, their countdown window is calculated based on this duration.
-                </p>
-              </div>
-
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                fullWidth
-                loading={savingConfig}
-                icon={Save}
-                className="bg-gradient-to-r from-orange-600 to-red-600 font-extrabold"
-              >
-                Save Hackathon Configuration
-              </Button>
-            </form>
-          </Card>
         </div>
       ) : (
         /* Tab 5: Declare Results Form */

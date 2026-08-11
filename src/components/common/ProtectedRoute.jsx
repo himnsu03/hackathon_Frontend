@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
-export const ProtectedRoute = ({ children, requireShortlist = false, requireAdmin = false }) => {
+export const ProtectedRoute = ({ children, requireShortlist = false, requireAdmin = false, requiredRole = null }) => {
   const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
 
@@ -20,13 +20,33 @@ export const ProtectedRoute = ({ children, requireShortlist = false, requireAdmi
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Redirect candidate attempting to access admin route to /dashboard
-  if (requireAdmin && user?.role !== 'admin') {
+  const userRole = user?.role?.toLowerCase() || 'candidate';
+
+  // Evaluators must NEVER access /dashboard or candidate-only routes
+  if (userRole === 'evaluator') {
+    if (location.pathname === '/dashboard' || requiredRole === 'candidate') {
+      return <Navigate to="/evaluator/synopsis" replace />;
+    }
+  }
+
+  // Role check if requiredRole specified
+  if (requiredRole) {
+    const req = requiredRole.toLowerCase();
+    if (userRole !== req && userRole !== 'admin') {
+      if (userRole === 'evaluator') return <Navigate to="/evaluator/synopsis" replace />;
+      if (userRole === 'admin') return <Navigate to="/admin" replace />;
+      return <Navigate to="/dashboard" replace />;
+    }
+  }
+
+  // Redirect non-admin attempting to access admin route
+  if (requireAdmin && userRole !== 'admin') {
+    if (userRole === 'evaluator') return <Navigate to="/evaluator/synopsis" replace />;
     return <Navigate to="/dashboard" replace />;
   }
 
   // Redirect admin attempting to access candidate-only routes to /admin
-  if (!requireAdmin && user?.role === 'admin') {
+  if (!requireAdmin && !requiredRole && userRole === 'admin') {
     return <Navigate to="/admin" replace />;
   }
 

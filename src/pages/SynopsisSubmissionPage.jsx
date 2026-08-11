@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { synopsisApi } from '../services/synopsisApi';
-import { problemStatementService } from '../services/problemStatementService';
+import { problemStatementApi } from '../services/problemStatementApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
@@ -30,19 +30,16 @@ export const SynopsisSubmissionPage = () => {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const statements = problemStatementService.getStatements();
-        setProblemStatements(statements);
-        if (statements.length > 0) {
-          setSelectedProblemId(statements[0].id);
-        }
+        const statements = await problemStatementApi.getProblemStatements();
+        setProblemStatements(statements || []);
 
         const data = await synopsisApi.getStatus();
         setSynopsisData(data);
         if (data.synopsisContent) {
           setContent(data.synopsisContent);
         }
-        if (data.problemStatementRef) {
-          setSelectedProblemId(data.problemStatementRef);
+        if (data.problemStatementRef || data.problem_statement_id) {
+          setSelectedProblemId(data.problemStatementRef || data.problem_statement_id);
         }
       } catch {
         // No prior submission, default state
@@ -78,7 +75,8 @@ export const SynopsisSubmissionPage = () => {
     setSubmitting(true);
     try {
       const res = await synopsisApi.submitSynopsis({
-        problemStatementRef: selectedProblemId || 'PS-SMART-CITY-01',
+        problem_statement_id: selectedProblemId,
+        problemStatementRef: selectedProblemId,
         content,
       });
       toast.success(res.message || `Synopsis proposal for ${selectedProblemId} submitted successfully!`);
@@ -187,6 +185,22 @@ export const SynopsisSubmissionPage = () => {
             )}
           </div>
 
+          {/* Full Expanded View of Chosen Problem Statement */}
+          {selectedProblem && (
+            <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2">
+              <span className="text-[10px] font-mono text-orange-400 font-bold uppercase tracking-wider block">
+                Selected Track Full Details: {selectedProblem.id}
+              </span>
+              <h4 className="text-sm font-bold text-slate-100">{selectedProblem.title}</h4>
+              <p className="text-xs text-slate-300 leading-relaxed">{selectedProblem.description}</p>
+              {selectedProblem.rules && (
+                <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400">
+                  <strong>Track Constraints:</strong> {selectedProblem.rules}
+                </div>
+              )}
+            </div>
+          )}
+
           {isSubmitted ? (
             /* Read-Only Mode */
             <div className="space-y-4 pt-2">
@@ -237,7 +251,7 @@ export const SynopsisSubmissionPage = () => {
                 </div>
               )}
             </div>
-          ) : (
+          ) : selectedProblemId ? (
             /* Editable Form Mode */
             <form onSubmit={handleSubmit} className="space-y-6">
               <TextArea
@@ -284,6 +298,14 @@ export const SynopsisSubmissionPage = () => {
                 </Button>
               </div>
             </form>
+          ) : (
+            <div className="p-6 bg-slate-950/60 border border-slate-800 rounded-xl text-center space-y-2">
+              <Lightbulb className="w-8 h-8 text-amber-400 mx-auto mb-1 animate-pulse" />
+              <h4 className="text-sm font-bold text-slate-200">Select a Problem Statement Track</h4>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Please click one of the problem statement challenge cards above to view full details and unlock the technical synopsis submission form.
+              </p>
+            </div>
           )}
         </div>
       </Card>

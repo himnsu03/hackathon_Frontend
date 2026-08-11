@@ -5,15 +5,17 @@ export const candidateApi = {
    * Get Candidate Dashboard details from backend and calculate real-time dynamic timeline
    */
   async getDashboard() {
-    const [dashboardRes, hackathonStatusRes, resultsRes] = await Promise.allSettled([
+    const [dashboardRes, hackathonStatusRes, resultsRes, resumeRes] = await Promise.allSettled([
       httpClient.get('/candidate/dashboard'),
       httpClient.get('/hackathon/status'),
       httpClient.get('/results'),
+      httpClient.get('/candidate/resume'),
     ]);
 
     const data = dashboardRes.status === 'fulfilled' ? dashboardRes.value.data : {};
     const hackathonData = hackathonStatusRes.status === 'fulfilled' ? hackathonStatusRes.value.data : {};
     const resultsList = resultsRes.status === 'fulfilled' ? (Array.isArray(resultsRes.value.data) ? resultsRes.value.data : resultsRes.value.data?.results || []) : [];
+    const resumeData = resumeRes.status === 'fulfilled' ? resumeRes.value.data : null;
 
     const userObj = data.user || {};
     const synopsisObj = data.synopsis || {};
@@ -74,13 +76,14 @@ export const candidateApi = {
       user: {
         fullName: userObj.name || userObj.fullName,
         email: userObj.email,
-        submissionId: userObj.submissionId || 'SUB-2026-9842',
+        submissionId: userObj.submissionId || null,
         synopsisStatus,
         synopsisSubmittedAt: synopsisObj.submittedAt || null,
+        resume: resumeData || data.resume || null,
       },
       synopsisStatus,
       eligibleToStart: Boolean(data.eligibleToStart),
-      teaserProblemStatement: 'Provide an effective solution for smart waste management, traffic optimization, AI pair programming, or city logistics.',
+      teaserProblemStatement: null,
       keyDates,
       rules: [
         { title: 'Plagiarism & Originality', content: 'All code must be built during the hackathon window. Open-source libraries are permitted with proper attribution.' },
@@ -88,5 +91,46 @@ export const candidateApi = {
         { title: 'Evaluation Protocol', content: 'Judging panel reviews functionality, code architecture, UI polish, and innovation.' },
       ],
     };
+  },
+
+  /**
+   * Upload resume file (POST /api/candidate/resume)
+   */
+  async uploadResume(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const response = await httpClient.post('/candidate/resume', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (err) {
+      console.warn('[candidateApi] uploadResume direct multipart failed, trying upload-url:', err.message);
+      const urlRes = await httpClient.post('/candidate/resume/upload-url', {
+        fileName: file.name,
+        contentType: file.type,
+      });
+      const { uploadUrl } = urlRes.data;
+      if (uploadUrl) {
+        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+        const confirmRes = await httpClient.post('/candidate/resume/confirm', { fileName: file.name });
+        return confirmRes.data;
+      }
+      throw err;
+    }
+  },
+
+  /**
+   * Get Candidate Resume info
+   */
+  async getResumeInfo() {
+    try {
+      const response = await httpClient.get('/candidate/resume');
+      return response.data;
+    } catch {
+      return null;
+    }
   },
 };

@@ -105,7 +105,7 @@ export const RegistrationPage = () => {
           login(loginRes.token, loginRes.user);
         }
         toast.success(`Registration successful! Welcome, ${formData.fullName.trim()}!`);
-        navigate('/dashboard', { replace: true });
+        navigate('/synopsis', { replace: true });
       } catch (loginErr) {
         toast.success('Registration successful! Please log in with your credentials.');
         navigate('/login', { replace: true });

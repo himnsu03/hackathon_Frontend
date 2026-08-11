@@ -22,6 +22,8 @@ import {
   Clock,
   ArrowRight,
   ShieldCheck,
+  Upload,
+  RefreshCw,
 } from 'lucide-react';
 
 export const CandidateDashboardPage = () => {
@@ -33,6 +35,12 @@ export const CandidateDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [expandedRule, setExpandedRule] = useState(null);
+
+  // Resume Upload State
+  const [resumeInfo, setResumeInfo] = useState(null);
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isReplacingResume, setIsReplacingResume] = useState(false);
 
   const warningShownRef = React.useRef(false);
 
@@ -50,6 +58,12 @@ export const CandidateDashboardPage = () => {
       try {
         const data = await candidateApi.getDashboard();
         setDashboardData(data);
+        if (data?.user?.resume) {
+          setResumeInfo(data.user.resume);
+        } else {
+          const localResume = await candidateApi.getResumeInfo();
+          if (localResume) setResumeInfo(localResume);
+        }
         if (data.synopsisStatus && user) {
           updateUser({ synopsisStatus: data.synopsisStatus, submissionId: data.user.submissionId });
         }
@@ -240,8 +254,109 @@ export const CandidateDashboardPage = () => {
           </Card>
         </div>
 
-        {/* Right Column (1/3 width on desktop): Rules Accordion & Support */}
+        {/* Right Column (1/3 width on desktop): Resume Upload, Rules Accordion & Support */}
         <div className="space-y-8">
+          {/* Candidate Resume Upload Card */}
+          <Card title="Candidate Resume Upload" subtitle="Upload your technical CV for mentor & organizer review">
+            <div className="space-y-4">
+              {resumeInfo && !isReplacingResume ? (
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-xl flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h5 className="text-xs font-bold text-slate-100 truncate">{resumeInfo.fileName || 'Resume.pdf'}</h5>
+                      <span className="text-[10px] text-slate-400 font-mono block">
+                        Uploaded: {resumeInfo.uploadedAt ? new Date(resumeInfo.uploadedAt).toLocaleDateString() : 'Active'}
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    fullWidth
+                    icon={RefreshCw}
+                    onClick={() => setIsReplacingResume(true)}
+                  >
+                    Replace Resume
+                  </Button>
+                </div>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!selectedFile) {
+                      toast.error('Please select a resume file (.pdf, .doc, .docx).');
+                      return;
+                    }
+                    setUploadingResume(true);
+                    try {
+                      const res = await candidateApi.uploadResume(selectedFile);
+                      setResumeInfo(res);
+                      setIsReplacingResume(false);
+                      setSelectedFile(null);
+                      toast.success(res?.message || 'Resume uploaded successfully!');
+                    } catch (err) {
+                      toast.error('Failed to upload resume. Please try again.');
+                    } finally {
+                      setUploadingResume(false);
+                    }
+                  }}
+                  className="space-y-3"
+                >
+                  <div className="p-4 bg-slate-950/60 border border-dashed border-slate-700 hover:border-orange-500/50 rounded-xl transition-colors text-center cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      id="resume-file-input"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setSelectedFile(e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <label htmlFor="resume-file-input" className="cursor-pointer space-y-1 block">
+                      <Upload className="w-6 h-6 text-orange-400 mx-auto mb-1" />
+                      <span className="text-xs font-bold text-slate-200 block">
+                        {selectedFile ? selectedFile.name : 'Choose Resume File'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">PDF, DOC, DOCX (Max 5MB)</span>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {isReplacingResume && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setIsReplacingResume(false);
+                          setSelectedFile(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="sm"
+                      fullWidth
+                      loading={uploadingResume}
+                      disabled={!selectedFile}
+                      icon={Upload}
+                    >
+                      {uploadingResume ? 'Uploading...' : 'Upload Resume'}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </Card>
+
           {/* Rules Accordion */}
           <Card title="Rules & Guidelines" subtitle="Important policies every candidate must follow">
             <div className="space-y-3">
