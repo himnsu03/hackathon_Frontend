@@ -13,7 +13,7 @@ const DEFAULT_CONFIG = {
 export const hackathonConfigService = {
   async fetchPublicConfig() {
     try {
-      const response = await httpClient.get('/public/hackathon-config');
+      const response = await httpClient.get('/api/public/hackathon-config');
       if (response.data) {
         localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(response.data));
         return response.data;

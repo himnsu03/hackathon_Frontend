@@ -104,10 +104,17 @@ export const adminApi = {
     };
 
     const payload = {
+      title: configData.title,
+      eligibilityCriteria: configData.eligibilityCriteria,
+      eligiblePassingYears: configData.eligiblePassingYears,
       synopsisStartDate: toInstant(configData.synopsisStartDate),
       synopsisDeadline: toInstant(configData.synopsisDeadline),
+      synopsisResultDate: toInstant(configData.synopsisResultDate),
       hackathonStartDate: toInstant(configData.hackathonStartDate),
       hackathonEndDate: toInstant(configData.hackathonEndDate),
+      hackathonResultDate: toInstant(configData.hackathonResultDate),
+      interviewStartDate: toInstant(configData.interviewStartDate),
+      interviewEndDate: toInstant(configData.interviewEndDate),
       durationHours: parseInt(configData.durationHours, 10) || 24,
     };
     return await AdminHackathonConfigService.updateConfig(payload);
@@ -271,7 +278,7 @@ export const adminApi = {
   /**
    * Get all Synopsis AI Evaluation Criteria via SDK
    */
-  async getAllSynopsisAiCriteria(hackathonConfigId = 1) {
+  async getAllSynopsisAiCriteria(hackathonConfigId = null) {
     try {
       return await SynopsisAiEvaluationCriteriaService.getAllCriteria(hackathonConfigId);
     } catch (err) {
@@ -307,8 +314,54 @@ export const adminApi = {
   /**
    * Get public/applicable Synopsis AI Evaluation Criteria via SDK
    */
-  async getPublicSynopsisAiCriteria(hackathonConfigId = 1, problemStatementRef = null) {
+  async getPublicSynopsisAiCriteria(hackathonConfigId = null, problemStatementRef = null) {
     return await SynopsisAiEvaluationCriteriaService.getApplicableCriteria(hackathonConfigId, problemStatementRef || undefined);
+  },
+
+  // ─── Hackathon Project AI Evaluation Criteria ───────────────────────────────
+
+  /**
+   * Get all Hackathon AI Evaluation Criteria (admin)
+   */
+  async getAllHackathonAiCriteria(hackathonConfigId = 1) {
+    const res = await httpClient.get('/api/admin/hackathon-ai-criteria', {
+      params: hackathonConfigId ? { hackathonConfigId } : {},
+    });
+    return res.data;
+  },
+
+  /**
+   * Get public/active Hackathon AI Evaluation Criteria
+   */
+  async getPublicHackathonAiCriteria(hackathonConfigId = 1) {
+    const res = await httpClient.get('/api/public/hackathon-ai-criteria', {
+      params: hackathonConfigId ? { hackathonConfigId } : {},
+    });
+    return res.data;
+  },
+
+  /**
+   * Create a Hackathon AI Evaluation Criteria entry (admin)
+   */
+  async createHackathonAiCriteria(data) {
+    const res = await httpClient.post('/api/admin/hackathon-ai-criteria', data);
+    return res.data;
+  },
+
+  /**
+   * Update a Hackathon AI Evaluation Criteria entry (admin)
+   */
+  async updateHackathonAiCriteria(id, data) {
+    const res = await httpClient.put(`/api/admin/hackathon-ai-criteria/${id}`, data);
+    return res.data;
+  },
+
+  /**
+   * Delete a Hackathon AI Evaluation Criteria entry (admin)
+   */
+  async deleteHackathonAiCriteria(id) {
+    const res = await httpClient.delete(`/api/admin/hackathon-ai-criteria/${id}`);
+    return res.data;
   },
 };
 

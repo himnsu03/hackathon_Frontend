@@ -19,10 +19,17 @@ export const AdminConfigPage = ({ embedded = false }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [form, setForm] = useState({
+    title: '',
+    eligibilityCriteria: '',
+    eligiblePassingYears: '',
     synopsisStartDate: '',
     synopsisDeadline: '',
+    synopsisResultDate: '',
     hackathonStartDate: '',
     hackathonEndDate: '',
+    hackathonResultDate: '',
+    interviewStartDate: '',
+    interviewEndDate: '',
     durationHours: '',
   });
 
@@ -39,10 +46,17 @@ export const AdminConfigPage = ({ embedded = false }) => {
             return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
           };
           setForm({
+            title: data.title || '',
+            eligibilityCriteria: data.eligibilityCriteria || '',
+            eligiblePassingYears: data.eligiblePassingYears || '',
             synopsisStartDate: toLocal(data.synopsisStartDate),
             synopsisDeadline: toLocal(data.synopsisDeadline),
+            synopsisResultDate: toLocal(data.synopsisResultDate),
             hackathonStartDate: toLocal(data.hackathonStartDate),
             hackathonEndDate: toLocal(data.hackathonEndDate),
+            hackathonResultDate: toLocal(data.hackathonResultDate),
+            interviewStartDate: toLocal(data.interviewStartDate),
+            interviewEndDate: toLocal(data.interviewEndDate),
             durationHours: data.durationHours || '',
           });
         }
@@ -121,43 +135,116 @@ export const AdminConfigPage = ({ embedded = false }) => {
         <form onSubmit={handleSave} className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Synopsis Submission Start Date"
-              type="datetime-local"
-              value={form.synopsisStartDate}
-              onChange={(e) => setForm({ ...form, synopsisStartDate: e.target.value })}
+              label="Hackathon Event Name / Title"
+              type="text"
+              required
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="e.g. StackHack 2.0"
             />
             <Input
-              label="Synopsis Submission Deadline"
-              type="datetime-local"
-              value={form.synopsisDeadline}
-              onChange={(e) => setForm({ ...form, synopsisDeadline: e.target.value })}
+              label="Candidate Coding Duration (Hours)"
+              type="number"
+              min={1}
+              required
+              value={form.durationHours}
+              onChange={(e) => setForm({ ...form, durationHours: e.target.value })}
+              placeholder="e.g. 48"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Hackathon Start Date"
-              type="datetime-local"
-              value={form.hackathonStartDate}
-              onChange={(e) => setForm({ ...form, hackathonStartDate: e.target.value })}
+              label="Eligible Passout Years (comma-separated)"
+              type="text"
+              required
+              value={form.eligiblePassingYears}
+              onChange={(e) => setForm({ ...form, eligiblePassingYears: e.target.value })}
+              placeholder="e.g. 2025, 2026"
             />
             <Input
-              label="Hackathon End Date"
-              type="datetime-local"
-              value={form.hackathonEndDate}
-              onChange={(e) => setForm({ ...form, hackathonEndDate: e.target.value })}
+              label="Eligibility Description Text"
+              type="text"
+              required
+              value={form.eligibilityCriteria}
+              onChange={(e) => setForm({ ...form, eligibilityCriteria: e.target.value })}
+              placeholder="e.g. 2025 and 2026 graduating batches"
             />
           </div>
 
-          <Input
-            label="Hackathon Duration (Hours)"
-            type="number"
-            min={1}
-            required
-            value={form.durationHours}
-            onChange={(e) => setForm({ ...form, durationHours: e.target.value })}
-            placeholder="e.g. 24"
-          />
+          {/* Phase 1: Registration & Synopsis */}
+          <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-orange-400">Phase 1: Registration & Synopsis Submission</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Input
+                label="Registration Start Date"
+                type="datetime-local"
+                value={form.synopsisStartDate}
+                onChange={(e) => setForm({ ...form, synopsisStartDate: e.target.value })}
+              />
+              <Input
+                label="Registration & Synopsis Deadline"
+                type="datetime-local"
+                value={form.synopsisDeadline}
+                onChange={(e) => setForm({ ...form, synopsisDeadline: e.target.value })}
+              />
+              <Input
+                label="Synopsis Shortlist & Result Date"
+                type="datetime-local"
+                value={form.synopsisResultDate}
+                onChange={(e) => setForm({ ...form, synopsisResultDate: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Phase 2: Main Hackathon Coding */}
+          <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400">Phase 2: Hackathon Coding Sprint</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Hackathon Start Date"
+                type="datetime-local"
+                value={form.hackathonStartDate}
+                onChange={(e) => setForm({ ...form, hackathonStartDate: e.target.value })}
+              />
+              <Input
+                label="Hackathon Submission Deadline"
+                type="datetime-local"
+                value={form.hackathonEndDate}
+                onChange={(e) => setForm({ ...form, hackathonEndDate: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Phase 3: Presentation and Discussion (F2F) */}
+          <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400">Phase 3: Presentation and Discussion (F2F) Phase</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Presentation & Discussion (F2F) Start Date"
+                type="datetime-local"
+                value={form.interviewStartDate}
+                onChange={(e) => setForm({ ...form, interviewStartDate: e.target.value })}
+              />
+              <Input
+                label="Presentation & Discussion (F2F) End Date"
+                type="datetime-local"
+                value={form.interviewEndDate}
+                onChange={(e) => setForm({ ...form, interviewEndDate: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Phase 4: Final Results & Winner Announcement */}
+          <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-4">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400">Phase 4: Final Winner Results & Job Offer Declaration</h4>
+            <Input
+              label="Final Winners & Results Declaration Date"
+              type="datetime-local"
+              value={form.hackathonResultDate}
+              onChange={(e) => setForm({ ...form, hackathonResultDate: e.target.value })}
+            />
+          </div>
 
           <div className="flex items-center justify-end pt-4 border-t border-slate-800">
             <Button

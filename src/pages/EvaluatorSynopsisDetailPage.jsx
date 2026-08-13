@@ -220,7 +220,12 @@ export const EvaluatorSynopsisDetailPage = () => {
             <span className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
               <Award className="w-5 h-5 text-orange-400" /> Aggregated Evaluation Score
             </span>
-            <span className="text-xl font-extrabold font-mono text-slate-100">{overallScore} / 100</span>
+            {(() => {
+              const maxTotalScore = criteria.reduce((sum, c) => sum + (Number(c.weightage) || Number(c.maxScore) || 25), 0);
+              return (
+                <span className="text-xl font-extrabold font-mono text-slate-100">{overallScore} / {maxTotalScore}</span>
+              );
+            })()}
           </div>
 
           <TextArea

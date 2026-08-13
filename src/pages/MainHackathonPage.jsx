@@ -59,6 +59,7 @@ export const MainHackathonPage = () => {
   const [evalCriteria, setEvalCriteria] = useState([]);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
+  const [globalConfig, setGlobalConfig] = useState(null);
 
   // Form State
   const [githubUrl, setGithubUrl] = useState('');
@@ -180,6 +181,11 @@ export const MainHackathonPage = () => {
   // Initial load + 60s Server Sync Polling to correct drift
   useEffect(() => {
     fetchHackathonData();
+    // Also fetch public config for window validation
+    fetch('/api/public/hackathon-config')
+      .then(r => r.ok ? r.json() : null)
+      .then(cfg => { if (cfg) setGlobalConfig(cfg); })
+      .catch(() => {});
 
     const pollInterval = setInterval(() => {
       fetchHackathonData();
@@ -189,10 +195,23 @@ export const MainHackathonPage = () => {
   }, []);
 
   const handleStartHackathon = async () => {
+    // Check hackathon window
+    const now = new Date();
+    if (globalConfig?.hackathonStartDate && now < new Date(globalConfig.hackathonStartDate)) {
+      const openDate = new Date(globalConfig.hackathonStartDate).toLocaleString();
+      toast.warning(`The hackathon has not started yet. Coding sprint begins on ${openDate}. Please come back then!`);
+      return;
+    }
+    if (globalConfig?.hackathonEndDate && now > new Date(globalConfig.hackathonEndDate)) {
+      const closeDate = new Date(globalConfig.hackathonEndDate).toLocaleString();
+      toast.error(`The hackathon submission window has closed (deadline was ${closeDate}). No new timers can be started.`);
+      return;
+    }
+
     setStarting(true);
     try {
       const res = await hackathonApi.startHackathon();
-      toast.success('Hackathon timer started! Your 24-hour countdown is ticking.');
+      toast.success('Hackathon timer started! Your coding countdown is now live.');
 
       if (res) {
         const startIso = res.assignmentStartTime || new Date().toISOString();
@@ -260,8 +279,21 @@ export const MainHackathonPage = () => {
       toast.success('Project submission recorded successfully!');
       setStatusData(res);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to submit project. Please try again.';
-      toast.error(msg);
+      // Surface the exact backend message — backend gives detailed reasons
+      // (deadline passed, not started, locked, etc.)
+      const backendMsg = err.response?.data?.message
+        || err.response?.data?.error
+        || err.message;
+
+      if (err.response?.status === 422) {
+        toast.error(`Submission rejected: ${backendMsg || 'The submission deadline has passed or the timer is locked.'}`);
+      } else if (err.response?.status === 400) {
+        toast.error(`Cannot submit: ${backendMsg || 'Hackathon timer has not been started yet. Click "Start Hackathon Timer" first.'}`);
+      } else if (err.response?.status === 403) {
+        toast.error('Access denied: Your synopsis must be shortlisted to submit hackathon work.');
+      } else {
+        toast.error(backendMsg || 'Failed to submit project. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -326,21 +358,48 @@ export const MainHackathonPage = () => {
           <div className="w-14 h-14 bg-orange-500/10 border border-orange-500/30 rounded-2xl flex items-center justify-center text-orange-400 mx-auto">
             <Terminal className="w-7 h-7" />
           </div>
-          <h2 className="text-3xl font-extrabold text-white">Ready to Begin the Hackathon?</h2>
-          <p className="text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
-            Once you click <strong>Start Hackathon Timer Now</strong>, your 24-hour non-stop countdown timer will begin on the server. Make sure your team is ready!
-          </p>
 
-          <Button
-            variant="primary"
-            size="lg"
-            icon={Play}
-            loading={starting}
-            onClick={handleStartHackathon}
-            className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-extrabold px-8 py-3 rounded-xl shadow-xl shadow-orange-500/25"
-          >
-            Start Hackathon Timer Now
-          </Button>
+          {/* Not started yet */}
+          {globalConfig?.hackathonStartDate && new Date() < new Date(globalConfig.hackathonStartDate) ? (
+            <>
+              <h2 className="text-3xl font-extrabold text-white">Hackathon Not Yet Started</h2>
+              <p className="text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
+                The coding sprint officially begins on{' '}
+                <strong className="text-orange-400">{new Date(globalConfig.hackathonStartDate).toLocaleString()}</strong>.
+                Come back then to start your timer!
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 text-sm">
+                <Clock className="w-4 h-4 text-orange-400" />
+                Opens in: <CountdownTimer targetDate={globalConfig.hackathonStartDate} urgentThresholdHours={24} />
+              </div>
+            </>
+          ) : globalConfig?.hackathonEndDate && new Date() > new Date(globalConfig.hackathonEndDate) ? (
+            <>
+              <h2 className="text-3xl font-extrabold text-white">Hackathon Window Closed</h2>
+              <p className="text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
+                The submission deadline was{' '}
+                <strong className="text-rose-400">{new Date(globalConfig.hackathonEndDate).toLocaleString()}</strong>.
+                The hackathon has concluded and no new timers can be started.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl font-extrabold text-white">Ready to Begin the Hackathon?</h2>
+              <p className="text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
+                Once you click <strong>Start Hackathon Timer Now</strong>, your countdown timer will begin on the server. Make sure your team is ready!
+              </p>
+              <Button
+                variant="primary"
+                size="lg"
+                icon={Play}
+                loading={starting}
+                onClick={handleStartHackathon}
+                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-extrabold px-8 py-3 rounded-xl shadow-xl shadow-orange-500/25"
+              >
+                Start Hackathon Timer Now
+              </Button>
+            </>
+          )}
         </div>
       )}
 

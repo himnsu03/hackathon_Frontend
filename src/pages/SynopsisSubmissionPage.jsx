@@ -27,6 +27,7 @@ export const SynopsisSubmissionPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
+  const [hackathonConfig, setHackathonConfig] = useState(null);
 
   const MIN_CHARS = 200;
 
@@ -46,13 +47,25 @@ export const SynopsisSubmissionPage = () => {
         }
       } catch {
         // No prior submission, default state
-      } finally {
-        setLoading(false);
       }
+
+      // Fetch hackathon config for window validation
+      try {
+        const cfgRes = await fetch('/api/public/hackathon-config');
+        if (cfgRes.ok) setHackathonConfig(await cfgRes.json());
+      } catch { /* ignore */ }
+
+      setLoading(false);
     };
 
     fetchStatus();
   }, []);
+
+  // Derive synopsis window state from config
+  const now = new Date();
+  const synopsisOpen = hackathonConfig?.synopsisStartDate ? new Date(hackathonConfig.synopsisStartDate) <= now : true;
+  const synopsisClosed = hackathonConfig?.synopsisDeadline ? new Date(hackathonConfig.synopsisDeadline) < now : false;
+  const synopsisWindowBlocked = !synopsisOpen || synopsisClosed;
 
   const [aiCriteria, setAiCriteria] = useState([]);
 
@@ -81,6 +94,26 @@ export const SynopsisSubmissionPage = () => {
     if (isShortlisted) {
       setError('Your synopsis has been shortlisted and cannot be edited or switched.');
       toast.error('Shortlisted synopses are locked.');
+      return;
+    }
+
+    if (!synopsisOpen) {
+      const openDate = hackathonConfig?.synopsisStartDate
+        ? new Date(hackathonConfig.synopsisStartDate).toLocaleString()
+        : 'the scheduled time';
+      const msg = `Synopsis submissions have not opened yet. Registration opens on ${openDate}.`;
+      setError(msg);
+      toast.warning(msg);
+      return;
+    }
+
+    if (synopsisClosed) {
+      const closeDate = hackathonConfig?.synopsisDeadline
+        ? new Date(hackathonConfig.synopsisDeadline).toLocaleString()
+        : 'the deadline';
+      const msg = `The synopsis submission window has closed (deadline was ${closeDate}). No further submissions are accepted.`;
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -133,13 +166,42 @@ export const SynopsisSubmissionPage = () => {
           </Button>
         </Link>
 
-        {synopsisData?.deadline && (
+        {hackathonConfig?.synopsisDeadline && synopsisOpen && !synopsisClosed && (
           <div className="flex items-center gap-3 bg-amber-950/40 border border-amber-500/40 px-4 py-2 rounded-xl text-amber-300">
-            <span className="text-xs font-semibold">Synopsis Window:</span>
-            <CountdownTimer targetDate={synopsisData.deadline} urgentThresholdHours={24} />
+            <span className="text-xs font-semibold">Synopsis Window Closes:</span>
+            <CountdownTimer targetDate={hackathonConfig.synopsisDeadline} urgentThresholdHours={24} />
           </div>
         )}
       </div>
+
+      {/* Window Status Banner */}
+      {!synopsisOpen && (
+        <div className="flex items-center gap-3 p-4 bg-blue-950/40 border border-blue-500/40 rounded-xl text-blue-300">
+          <Lock className="w-5 h-5 shrink-0" />
+          <div>
+            <p className="text-sm font-bold">Submissions Not Yet Open</p>
+            <p className="text-xs text-blue-400">
+              Synopsis registration opens on{' '}
+              <strong>{hackathonConfig?.synopsisStartDate ? new Date(hackathonConfig.synopsisStartDate).toLocaleString() : '—'}</strong>.
+              Check back then!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {synopsisClosed && (
+        <div className="flex items-center gap-3 p-4 bg-rose-950/40 border border-rose-500/40 rounded-xl text-rose-300">
+          <Lock className="w-5 h-5 shrink-0" />
+          <div>
+            <p className="text-sm font-bold">Submission Window Closed</p>
+            <p className="text-xs text-rose-400">
+              The synopsis deadline was{' '}
+              <strong>{hackathonConfig?.synopsisDeadline ? new Date(hackathonConfig.synopsisDeadline).toLocaleString() : '—'}</strong>.
+              No further submissions are accepted.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Main Synopsis Card */}
       <Card

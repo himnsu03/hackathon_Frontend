@@ -36,7 +36,7 @@ export const hackathonApi = {
       githubRepoUrl: data.githubRepoUrl || data.githubUrl,
       liveAppUrl: data.liveAppUrl || '',
     };
-    return await HackathonCoreService.submitHackathonProject(payload);
+    return await HackathonCoreService.submitHackathon(payload);
   },
 
   /**

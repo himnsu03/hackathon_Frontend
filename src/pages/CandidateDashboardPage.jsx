@@ -93,7 +93,7 @@ export const CandidateDashboardPage = () => {
   }, []);
 
   const handleCopyId = () => {
-    const subId = dashboardData?.user?.submissionId || user?.submissionId || 'SUB-2026-9842';
+    const subId = dashboardData?.user?.submissionId || user?.submissionId || '';
     navigator.clipboard.writeText(subId);
     setCopied(true);
     toast.success('Submission ID copied to clipboard!');
@@ -110,7 +110,7 @@ export const CandidateDashboardPage = () => {
   }
 
   const synopsisStatus = dashboardData?.synopsisStatus || dashboardData?.user?.synopsisStatus || user?.synopsisStatus || 'NOT_SUBMITTED';
-  const submissionId = dashboardData?.user?.submissionId || user?.submissionId || 'SUB-2026-9842';
+  const submissionId = dashboardData?.user?.submissionId || user?.submissionId || '';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -234,35 +234,95 @@ export const CandidateDashboardPage = () => {
           </Card>
 
           {/* Key Dates Timeline */}
-          <Card title="Key Hackathon Timeline" subtitle="Official schedule of events and lock dates">
+          <Card title="Key Hackathon Timeline" subtitle="Official schedule of events and milestone dates">
             <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
-              {(dashboardData?.keyDates || []).map((kd, idx) => (
-                <div key={idx} className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  {/* Circle Marker */}
-                  <div
-                    className={`absolute -left-6 top-1 w-4 h-4 rounded-full border-2 ${kd.status === 'completed'
-                      ? 'bg-emerald-500 border-emerald-400'
-                      : kd.status === 'active'
-                        ? 'bg-orange-500 border-orange-400 animate-ping'
-                        : 'bg-slate-900 border-slate-700'
-                      }`}
-                  />
-                  <div>
-                    <h5 className="text-sm font-semibold text-slate-200">{kd.label}</h5>
-                    <span className="text-xs font-mono text-slate-400">{kd.date}</span>
+              {(() => {
+                const formatTimelineDate = (iso) => {
+                  if (!iso) return 'To be announced';
+                  try {
+                    const d = new Date(iso);
+                    if (isNaN(d.getTime())) return 'To be announced';
+                    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    return `${dateStr} • ${timeStr}`;
+                  } catch {
+                    return 'To be announced';
+                  }
+                };
+
+                const now = new Date();
+                const getStatus = (startIso, endIso) => {
+                  if (!startIso) return 'upcoming';
+                  const start = new Date(startIso);
+                  if (now < start) return 'upcoming';
+                  if (!endIso) return 'completed';
+                  const end = new Date(endIso);
+                  if (now > end) return 'completed';
+                  return 'active';
+                };
+
+                const milestones = (dashboardData?.keyDates && dashboardData.keyDates.length > 0)
+                  ? dashboardData.keyDates
+                  : [
+                    {
+                      label: 'Phase 01: Registration & Synopsis Opens',
+                      date: formatTimelineDate(globalConfig?.synopsisStartDate),
+                      status: getStatus(globalConfig?.synopsisStartDate, globalConfig?.synopsisDeadline),
+                    },
+                    {
+                      label: 'Phase 02: Registration & Synopsis Deadline',
+                      date: formatTimelineDate(globalConfig?.synopsisDeadline),
+                      status: getStatus(globalConfig?.synopsisDeadline, globalConfig?.synopsisResultDate),
+                    },
+                    {
+                      label: 'Phase 03: Live Hackathon Coding Sprint',
+                      date: globalConfig?.hackathonStartDate && globalConfig?.hackathonEndDate
+                        ? `${formatTimelineDate(globalConfig.hackathonStartDate)} - ${formatTimelineDate(globalConfig.hackathonEndDate)}`
+                        : formatTimelineDate(globalConfig?.hackathonStartDate),
+                      status: getStatus(globalConfig?.hackathonStartDate, globalConfig?.hackathonEndDate),
+                    },
+                    {
+                      label: 'Phase 04: Presentation & Discussion (F2F)',
+                      date: globalConfig?.interviewStartDate && globalConfig?.interviewEndDate
+                        ? `${formatTimelineDate(globalConfig.interviewStartDate)} - ${formatTimelineDate(globalConfig.interviewEndDate)}`
+                        : formatTimelineDate(globalConfig?.interviewStartDate),
+                      status: getStatus(globalConfig?.interviewStartDate, globalConfig?.interviewEndDate),
+                    },
+                    {
+                      label: 'Phase 05: Final Winner Results & Job Offers',
+                      date: formatTimelineDate(globalConfig?.hackathonResultDate || globalConfig?.interviewEndDate),
+                      status: getStatus(globalConfig?.hackathonResultDate, null),
+                    },
+                  ];
+
+                return milestones.map((kd, idx) => (
+                  <div key={idx} className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    {/* Circle Marker */}
+                    <div
+                      className={`absolute -left-6 top-1 w-4 h-4 rounded-full border-2 ${kd.status === 'completed'
+                        ? 'bg-emerald-500 border-emerald-400'
+                        : kd.status === 'active'
+                          ? 'bg-orange-500 border-orange-400 animate-pulse'
+                          : 'bg-slate-900 border-slate-700'
+                        }`}
+                    />
+                    <div>
+                      <h5 className="text-sm font-semibold text-slate-200">{kd.label}</h5>
+                      <span className="text-xs font-mono text-slate-400">{kd.date}</span>
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full w-fit ${kd.status === 'completed'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                        : kd.status === 'active'
+                          ? 'bg-orange-500/10 text-orange-400 border border-orange-500/30'
+                          : 'bg-slate-800 text-slate-500'
+                        }`}
+                    >
+                      {kd.status}
+                    </span>
                   </div>
-                  <span
-                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full w-fit ${kd.status === 'completed'
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                      : kd.status === 'active'
-                        ? 'bg-orange-500/10 text-orange-400 border border-orange-500/30'
-                        : 'bg-slate-800 text-slate-500'
-                      }`}
-                  >
-                    {kd.status}
-                  </span>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </Card>
         </div>

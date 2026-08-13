@@ -7,6 +7,7 @@ import { AdminConfigPage } from './AdminConfigPage';
 import { AdminEvaluatorsPage } from './AdminEvaluatorsPage';
 import { AdminProblemStatementsPage } from './AdminProblemStatementsPage';
 import { AdminSynopsisAiCriteriaPage } from './AdminSynopsisAiCriteriaPage';
+import { AdminHackathonAiCriteriaPage } from './AdminHackathonAiCriteriaPage';
 
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
@@ -82,20 +83,14 @@ export const AdminPanelPage = () => {
   const [projectTitle, setProjectTitle] = useState('');
   const [declaring, setDeclaring] = useState(false);
 
-  const CATEGORY_OPTIONS = [
-    'IoT & Smart Cities',
-    'Artificial Intelligence & ML',
-    'Web3 & Blockchain',
-    'CleanTech & Sustainability',
-    'FinTech & Payments',
-    'Healthcare & MedTech',
-    'Cybersecurity & Privacy',
-    'EdTech & E-Learning',
-    'AR/VR & Gaming',
-    'DevOps & Cloud Automation',
+  const dynamicCategories = (problemStatements || [])
+    .map(ps => ps.category || ps.title)
+    .filter(Boolean);
+  const CATEGORY_OPTIONS = Array.from(new Set([
+    ...dynamicCategories,
     'Open Innovation Track',
-    'Custom Category (Type below)...',
-  ];
+    'Custom Category (Type below)...'
+  ]));
 
   const fetchSynopses = async (filter = statusFilter) => {
     setSynopsisLoading(true);
@@ -109,7 +104,7 @@ export const AdminPanelPage = () => {
       
       let msg = `Failed to load candidate synopsis submissions (${statusCode || 'Network'}): ${detailMsg}`;
       if (statusCode === 403) {
-        msg = 'Access Denied (403): Your account does not have ADMIN privileges. Please re-login with admin@hackathon.com / Admin@123.';
+        msg = 'Access Denied (403): Your account does not have ADMIN privileges. Please log in with an administrator account.';
       }
       toast.error(msg);
     } finally {
@@ -358,7 +353,17 @@ export const AdminPanelPage = () => {
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              AI Criteria
+              Synopsis AI Criteria
+            </button>
+            <button
+              onClick={() => setActiveTab('hackathon-ai-criteria')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'hackathon-ai-criteria'
+                  ? 'bg-orange-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Hackathon Criteria
             </button>
           </div>
         </div>
@@ -372,6 +377,8 @@ export const AdminPanelPage = () => {
         <AdminProblemStatementsPage embedded />
       ) : activeTab === 'ai-criteria' ? (
         <AdminSynopsisAiCriteriaPage />
+      ) : activeTab === 'hackathon-ai-criteria' ? (
+        <AdminHackathonAiCriteriaPage />
       ) : activeTab === 'synopses' ? (
 
         /* Tab 1: Synopsis Proposals Review */
