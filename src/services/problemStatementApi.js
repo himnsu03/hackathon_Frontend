@@ -1,4 +1,4 @@
-import { httpClient } from './httpClient';
+import { PublicProblemStatementService } from '../sdk';
 import { problemStatementService } from './problemStatementService';
 
 const parseList = (val) => {
@@ -10,16 +10,16 @@ const parseList = (val) => {
 
 export const problemStatementApi = {
   /**
-   * Fetch active problem statements from backend GET /api/problem-statements
+   * Fetch active problem statements from backend via SDK
    */
   async getProblemStatements() {
     try {
-      const response = await httpClient.get('/problem-statements');
-      const data = response.data?.content || response.data?.items || response.data;
-      if (Array.isArray(data)) {
-        return data.map((item) => ({
+      const data = await PublicProblemStatementService.getPublicProblemStatements();
+      const list = data?.content || data?.items || data;
+      if (Array.isArray(list)) {
+        return list.map((item) => ({
           dbId: item.dbId || item.db_id || item.id,
-          id: item.id || item.code || item.referenceCode || `PS-${item.title?.slice(0, 5)}`,
+          id: item.id || item.code || item.referenceCode || item.problemId || `PS-${item.title?.slice(0, 5)}`,
           title: item.title || item.name || 'Untitled Problem Statement',
           category: item.category || item.track || 'General Tech',
           description: item.description || item.challengeDetails || item.content || '',

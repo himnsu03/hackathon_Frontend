@@ -75,8 +75,9 @@ export const CandidateDashboardPage = () => {
             const localResume = await candidateApi.getResumeInfo();
             if (localResume) setResumeInfo(localResume);
           }
-          if (dash.synopsisStatus && user) {
-            updateUser({ synopsisStatus: dash.synopsisStatus, submissionId: dash.user.submissionId });
+          const effectiveStatus = dash.synopsisStatus || dash.user?.synopsisStatus || user?.synopsisStatus;
+          if (effectiveStatus && user) {
+            updateUser({ synopsisStatus: effectiveStatus, submissionId: dash.user?.submissionId || user.submissionId });
           }
         }
       } catch (err) {
@@ -108,7 +109,7 @@ export const CandidateDashboardPage = () => {
     );
   }
 
-  const synopsisStatus = dashboardData?.user?.synopsisStatus || user?.synopsisStatus || 'NOT_SUBMITTED';
+  const synopsisStatus = dashboardData?.synopsisStatus || dashboardData?.user?.synopsisStatus || user?.synopsisStatus || 'NOT_SUBMITTED';
   const submissionId = dashboardData?.user?.submissionId || user?.submissionId || 'SUB-2026-9842';
 
   return (

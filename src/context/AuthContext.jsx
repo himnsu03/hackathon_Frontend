@@ -15,10 +15,15 @@ export const AuthProvider = ({ children }) => {
       if (storedToken) {
         try {
           const res = await authApi.getMe();
-          setUser(res.user || null);
+          const userData = res.user || null;
+          setUser(userData);
+          if (userData) {
+            localStorage.setItem('user_details', JSON.stringify(userData));
+          }
         } catch {
           // Token invalid or session expired
           localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_details');
           setToken(null);
           setUser(null);
         }
@@ -31,18 +36,27 @@ export const AuthProvider = ({ children }) => {
 
   const login = (newToken, userData) => {
     localStorage.setItem('auth_token', newToken);
+    if (userData) {
+      localStorage.setItem('user_details', JSON.stringify(userData));
+    }
     setToken(newToken);
     setUser(userData);
   };
 
   const logout = () => {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_details');
     setToken(null);
     setUser(null);
   };
 
   const updateUser = (updatedFields) => {
-    setUser((prev) => (prev ? { ...prev, ...updatedFields } : prev));
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updatedFields };
+      localStorage.setItem('user_details', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   return (

@@ -1,13 +1,13 @@
-import { httpClient } from './httpClient';
+import { PublicResultsService } from '../sdk';
 
 export const resultsApi = {
   /**
-   * Get public leaderboard results from backend
+   * Get public leaderboard results from backend via SDK
    */
   async getPublicResults() {
     try {
-      const response = await httpClient.get('/results');
-      const list = Array.isArray(response.data) ? response.data : response.data?.results || [];
+      const response = await PublicResultsService.getResults();
+      const list = Array.isArray(response) ? response : response?.results || [];
 
       const positionTextMap = {
         FIRST: '1st Place',

@@ -59,15 +59,9 @@ export const EvaluatorHackathonDetailPage = () => {
             setOverallScore(ev.totalScore || ev.score);
           }
         } else {
-          const initial = {};
-          let initialSum = 0;
-          critList.forEach((c) => {
-            const val = Math.round((c.maxScore || 25) * 0.85);
-            initial[c.name] = val;
-            initialSum += val;
-          });
-          setScores(initial);
-          setOverallScore(initialSum);
+          // Do NOT pre-fill automatic scores
+          setScores({});
+          setOverallScore(0);
         }
       } catch (err) {
         toast.error('Failed to load project submission details.');
@@ -220,7 +214,7 @@ export const EvaluatorHackathonDetailPage = () => {
           <div className="space-y-4">
             {criteria.map((c, idx) => {
               const max = c.maxScore || 25;
-              const val = scores[c.name] ?? Math.round(max * 0.85);
+              const val = scores[c.name] ?? '';
               return (
                 <div key={idx} className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>

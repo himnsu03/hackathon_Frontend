@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { evaluatorApi } from '../services/evaluatorApi';
+import { adminApi } from '../services/adminApi';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -27,28 +28,35 @@ export const EvaluatorSynopsisDetailPage = () => {
     const fetchDetail = async () => {
       setLoading(true);
       try {
-        const [synData, configData, existingEval] = await Promise.allSettled([
+        const [synData, existingEval] = await Promise.allSettled([
           evaluatorApi.getSynopsisById(id),
-          evaluatorApi.getPublicConfig(),
           evaluatorApi.getMySynopsisEvaluation(id),
         ]);
 
+        let syn = null;
         if (synData.status === 'fulfilled') {
-          setSynopsis(synData.value);
+          syn = synData.value;
+          setSynopsis(syn);
         }
 
-        const critList = [
-          { name: 'Problem Understanding & Relevance', maxScore: 10, description: 'Understanding of problem statement, constraints & context' },
-          { name: 'Innovation & Originality', maxScore: 20, description: 'Novelty of approach & creative problem solving' },
-          { name: 'Technical Implementation', maxScore: 20, description: 'Quality of architecture, algorithms & technology stack' },
-          { name: 'Feasibility & Practicality', maxScore: 15, description: 'Production readiness & enterprise constraints' },
-          { name: 'Business Impact & Scalability', maxScore: 15, description: 'Value creation, efficiency & system scalability' },
-          { name: 'User Experience & Design', maxScore: 10, description: 'Workflow clarity, usability & accessibility' },
-          { name: 'Presentation & Demonstration', maxScore: 10, description: 'Pitch quality, communication & Q&A handling' },
-        ];
+        // Fetch criteria submitted by Admin
+        let critList = [];
+        try {
+          const adminCritData = await adminApi.getPublicSynopsisAiCriteria(1, syn?.problemStatementRef);
+          if (Array.isArray(adminCritData) && adminCritData.length > 0) {
+            critList = adminCritData.map((c) => ({
+              name: c.title,
+              maxScore: c.weightage || 20,
+              description: c.description || 'Assesses proposal quality and technical alignment.'
+            }));
+          }
+        } catch (e) {
+          // Ignore error fallback
+        }
+
         setCriteria(critList);
 
-        // Pre-fill existing evaluation if found
+        // Pre-fill existing evaluation ONLY if evaluator previously saved an evaluation
         if (existingEval.status === 'fulfilled' && existingEval.value) {
           setAlreadyEvaluated(true);
           const ev = existingEval.value;
@@ -61,16 +69,9 @@ export const EvaluatorSynopsisDetailPage = () => {
             setOverallScore(ev.totalScore || ev.score);
           }
         } else {
-          // Initialize default scores per criterion
-          const initial = {};
-          let initialSum = 0;
-          critList.forEach((c) => {
-            const val = Math.round((c.maxScore || 25) * 0.8);
-            initial[c.name] = val;
-            initialSum += val;
-          });
-          setScores(initial);
-          setOverallScore(initialSum);
+          // Do NOT pre-fill automatic scores
+          setScores({});
+          setOverallScore(0);
         }
       } catch (err) {
         toast.error('Failed to load synopsis submission details.');
@@ -193,7 +194,7 @@ export const EvaluatorSynopsisDetailPage = () => {
           <div className="space-y-4">
             {criteria.map((c, idx) => {
               const max = c.maxScore || 25;
-              const val = scores[c.name] ?? Math.round(max * 0.8);
+              const val = scores[c.name] ?? '';
               return (
                 <div key={idx} className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>

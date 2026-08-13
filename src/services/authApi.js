@@ -1,9 +1,8 @@
-import { httpClient } from './httpClient';
+import { AuthenticationService } from '../sdk';
 
 export const authApi = {
   /**
-   * Register a new candidate (maps frontend form data to Spring Boot RegisterRequestDto)
-   * @param {Object} data - { fullName, email, password, phone, techStack, gradYear, college, experience, agreeRules }
+   * Register a new candidate (maps frontend form data to Spring Boot RegisterRequestDto via SDK)
    */
   async register(data) {
     const expMap = {
@@ -25,33 +24,26 @@ export const authApi = {
       agreedToRules: Boolean(data.agreeRules ?? data.agreedToRules ?? true),
     };
 
-    const response = await httpClient.post('/auth/register', payload);
-    return response.data;
+    return await AuthenticationService.register(payload);
   },
 
   /**
-   * Verify email token
-   * @param {string} token
+   * Verify email token via SDK
    */
   async verifyEmail(token) {
-    const response = await httpClient.post('/auth/verify-email', { token });
-    return response.data;
+    return await AuthenticationService.verifyEmail({ token });
   },
 
   /**
-   * Password-based login for candidate and admin
-   * @param {string} email
-   * @param {string} password
+   * Password-based login via SDK
    */
   async login(email, password) {
     const payload = {
       email,
       password,
     };
-    const response = await httpClient.post('/auth/login', payload);
-    const data = response.data;
+    const data = await AuthenticationService.login(payload);
 
-    // Normalize user response fields for frontend consumption
     if (data.user) {
       data.user.fullName = data.user.fullName || data.user.name;
       data.user.role = (data.user.role || 'candidate').toLowerCase();
@@ -60,11 +52,10 @@ export const authApi = {
   },
 
   /**
-   * Get current authenticated user session
+   * Get current authenticated user session via SDK
    */
   async getMe() {
-    const response = await httpClient.get('/auth/me');
-    const data = response.data;
+    const data = await AuthenticationService.getCurrentUser();
     const user = data.user || data;
     if (user) {
       user.fullName = user.fullName || user.name;

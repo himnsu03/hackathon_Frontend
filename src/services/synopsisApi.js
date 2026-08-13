@@ -1,13 +1,12 @@
-import { httpClient } from './httpClient';
+import { CandidateSynopsisService } from '../sdk';
 
 export const synopsisApi = {
   /**
-   * Get Synopsis submission status from backend
+   * Get Synopsis submission status from backend via SDK
    */
   async getStatus() {
     try {
-      const response = await httpClient.get('/synopsis/status');
-      const data = response.data;
+      const data = await CandidateSynopsisService.getSynopsisStatus();
       return {
         submitted: Boolean(data && data.content),
         status: data?.status || 'NOT_SUBMITTED',
@@ -17,8 +16,7 @@ export const synopsisApi = {
         problemStatement: 'Provide an effective solution for smart waste management, traffic optimization, or city logistics.',
       };
     } catch (err) {
-      // 404 status from backend indicates no synopsis submitted yet
-      if (err.response && err.response.status === 404) {
+      if (err.status === 404 || (err.response && err.response.status === 404)) {
         return {
           submitted: false,
           status: 'NOT_SUBMITTED',
@@ -33,7 +31,7 @@ export const synopsisApi = {
   },
 
   /**
-   * Submit Synopsis to backend
+   * Submit Synopsis to backend via SDK
    * @param {Object} data - { content, problemStatementRef }
    */
   async submitSynopsis(data) {
@@ -41,7 +39,6 @@ export const synopsisApi = {
       problemStatementRef: data.problemStatementRef || 'PS-SMART-CITY-01',
       content: typeof data === 'string' ? data : data.content,
     };
-    const response = await httpClient.post('/synopsis/submit', payload);
-    return response.data;
+    return await CandidateSynopsisService.submitSynopsis(payload);
   },
 };
