@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { evaluatorApi } from '../services/evaluatorApi';
+import { adminApi } from '../services/adminApi';
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -27,9 +28,9 @@ export const EvaluatorHackathonDetailPage = () => {
     const fetchDetail = async () => {
       setLoading(true);
       try {
-        const [subData, configData, existingEval] = await Promise.allSettled([
+        const [subData, criteriaData, existingEval] = await Promise.allSettled([
           evaluatorApi.getHackathonSubmissionById(id),
-          evaluatorApi.getPublicConfig(),
+          adminApi.getPublicHackathonAiCriteria(1),
           evaluatorApi.getMyHackathonEvaluation(id),
         ]);
 
@@ -37,15 +38,10 @@ export const EvaluatorHackathonDetailPage = () => {
           setSubmission(subData.value);
         }
 
-        const critList = configData.status === 'fulfilled' && configData.value?.evaluationCriteria
-          ? configData.value.evaluationCriteria
-          : [
-              { name: 'Code Quality & Implementation', maxScore: 25 },
-              { name: 'Feature Completeness', maxScore: 25 },
-              { name: 'UI/UX Polish & Responsiveness', maxScore: 25 },
-              { name: 'Innovation & Live Application Demo', maxScore: 25 },
-            ];
-        setCriteria(critList);
+        // Use DB-driven criteria only — no static fallback
+        if (criteriaData.status === 'fulfilled' && Array.isArray(criteriaData.value)) {
+          setCriteria(criteriaData.value.filter((c) => c.active !== false));
+        }
 
         if (existingEval.status === 'fulfilled' && existingEval.value) {
           setAlreadyEvaluated(true);
@@ -59,15 +55,8 @@ export const EvaluatorHackathonDetailPage = () => {
             setOverallScore(ev.totalScore || ev.score);
           }
         } else {
-          const initial = {};
-          let initialSum = 0;
-          critList.forEach((c) => {
-            const val = Math.round((c.maxScore || 25) * 0.85);
-            initial[c.name] = val;
-            initialSum += val;
-          });
-          setScores(initial);
-          setOverallScore(initialSum);
+          setScores({});
+          setOverallScore(0);
         }
       } catch (err) {
         toast.error('Failed to load project submission details.');
@@ -138,6 +127,18 @@ export const EvaluatorHackathonDetailPage = () => {
       <div className="min-h-[80vh] flex flex-col items-center justify-center">
         <Loader2 className="w-10 h-10 animate-spin text-orange-500 mb-3" />
         <p className="text-sm font-medium text-slate-400">Loading project submission for review...</p>
+      </div>
+    );
+  }
+
+  if (!submission) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center gap-4">
+        <Terminal className="w-12 h-12 text-slate-600" />
+        <p className="text-sm font-semibold text-slate-400">Submission not found or failed to load.</p>
+        <Link to="/evaluator/hackathon">
+          <Button variant="outline" size="sm" icon={ArrowLeft}>Back to Submissions</Button>
+        </Link>
       </div>
     );
   }
@@ -217,14 +218,26 @@ export const EvaluatorHackathonDetailPage = () => {
         subtitle={alreadyEvaluated ? 'You have evaluated this submission (you can update scores or shortlist state below).' : 'Rate code implementation, functionality, UI/UX, and live demo'}
       >
         <form onSubmit={handleSubmitScore} className="space-y-6">
+          {criteria.length === 0 ? (
+            <div className="p-6 bg-amber-950/30 border border-amber-500/30 rounded-xl text-center space-y-2">
+              <p className="text-sm font-bold text-amber-300">No Evaluation Criteria Configured</p>
+              <p className="text-xs text-amber-400/80">
+                An admin must add hackathon evaluation criteria from the Admin Panel → Hackathon AI Criteria tab before evaluators can score submissions.
+              </p>
+            </div>
+          ) : (
           <div className="space-y-4">
             {criteria.map((c, idx) => {
-              const max = c.maxScore || 25;
-              const val = scores[c.name] ?? Math.round(max * 0.85);
+              const max = Number(c.weightage) || Number(c.maxScore) || 25;
+              const key = c.title || c.name;
+              const val = scores[key] ?? '';
               return (
-                <div key={idx} className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div key={c.id || idx} className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h5 className="text-xs font-bold text-slate-200">{c.name}</h5>
+                    <h5 className="text-xs font-bold text-slate-200">{key}</h5>
+                    {c.description && (
+                      <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{c.description}</p>
+                    )}
                     <span className="text-[10px] text-slate-500 font-mono">Max Score: {max} pts</span>
                   </div>
                   <div className="w-32">
@@ -233,20 +246,23 @@ export const EvaluatorHackathonDetailPage = () => {
                       min={0}
                       max={max}
                       value={val}
-                      onChange={(e) => handleScoreChange(c.name, e.target.value, max)}
+                      onChange={(e) => handleScoreChange(key, e.target.value, max)}
                     />
                   </div>
                 </div>
               );
             })}
           </div>
+          )}
 
           {/* Overall Total Score Box */}
           <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-xl flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
               <Award className="w-5 h-5 text-emerald-400" /> Aggregated Evaluation Score
             </span>
-            <span className="text-xl font-extrabold font-mono text-slate-100">{overallScore} / 100</span>
+            <span className="text-xl font-extrabold font-mono text-slate-100">
+              {overallScore} / {criteria.reduce((sum, c) => sum + (Number(c.weightage) || Number(c.maxScore) || 25), 0)}
+            </span>
           </div>
 
           <TextArea

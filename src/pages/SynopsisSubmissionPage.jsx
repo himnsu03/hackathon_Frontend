@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { synopsisApi } from '../services/synopsisApi';
 import { problemStatementApi } from '../services/problemStatementApi';
+import { adminApi } from '../services/adminApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Input } from '../components/common/Input';
@@ -10,7 +11,8 @@ import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { TextArea } from '../components/common/TextArea';
 import { CountdownTimer } from '../components/common/CountdownTimer';
-import { FileText, Send, CheckCircle2, Loader2, ArrowLeft, Lightbulb, Check, RefreshCw, Lock, ListChecks, Package, Target, Award } from 'lucide-react';
+import { FileText, Send, CheckCircle2, Loader2, ArrowLeft, Lightbulb, Check, RefreshCw, Lock, ListChecks, Package, Target, Award, Sparkles } from 'lucide-react';
+
 
 export const SynopsisSubmissionPage = () => {
   const navigate = useNavigate();
@@ -25,6 +27,7 @@ export const SynopsisSubmissionPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
+  const [hackathonConfig, setHackathonConfig] = useState(null);
 
   const MIN_CHARS = 200;
 
@@ -44,15 +47,42 @@ export const SynopsisSubmissionPage = () => {
         }
       } catch {
         // No prior submission, default state
-      } finally {
-        setLoading(false);
       }
+
+      // Fetch hackathon config for window validation
+      try {
+        const cfgRes = await fetch('/api/public/hackathon-config');
+        if (cfgRes.ok) setHackathonConfig(await cfgRes.json());
+      } catch { /* ignore */ }
+
+      setLoading(false);
     };
 
     fetchStatus();
   }, []);
 
+  // Derive synopsis window state from config
+  const now = new Date();
+  const synopsisOpen = hackathonConfig?.synopsisStartDate ? new Date(hackathonConfig.synopsisStartDate) <= now : true;
+  const synopsisClosed = hackathonConfig?.synopsisDeadline ? new Date(hackathonConfig.synopsisDeadline) < now : false;
+  const synopsisWindowBlocked = !synopsisOpen || synopsisClosed;
+
+  const [aiCriteria, setAiCriteria] = useState([]);
+
+  useEffect(() => {
+    if (selectedProblemId) {
+      adminApi.getPublicSynopsisAiCriteria(1, selectedProblemId)
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            setAiCriteria(data);
+          }
+        })
+        .catch(() => { });
+    }
+  }, [selectedProblemId]);
+
   const selectedProblem = problemStatements.find((p) => p.id === selectedProblemId) || problemStatements[0];
+
 
   const status = synopsisData?.status || user?.synopsisStatus || 'NOT_SUBMITTED';
   const isShortlisted = status === 'SHORTLISTED';
@@ -64,6 +94,26 @@ export const SynopsisSubmissionPage = () => {
     if (isShortlisted) {
       setError('Your synopsis has been shortlisted and cannot be edited or switched.');
       toast.error('Shortlisted synopses are locked.');
+      return;
+    }
+
+    if (!synopsisOpen) {
+      const openDate = hackathonConfig?.synopsisStartDate
+        ? new Date(hackathonConfig.synopsisStartDate).toLocaleString()
+        : 'the scheduled time';
+      const msg = `Synopsis submissions have not opened yet. Registration opens on ${openDate}.`;
+      setError(msg);
+      toast.warning(msg);
+      return;
+    }
+
+    if (synopsisClosed) {
+      const closeDate = hackathonConfig?.synopsisDeadline
+        ? new Date(hackathonConfig.synopsisDeadline).toLocaleString()
+        : 'the deadline';
+      const msg = `The synopsis submission window has closed (deadline was ${closeDate}). No further submissions are accepted.`;
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -116,13 +166,42 @@ export const SynopsisSubmissionPage = () => {
           </Button>
         </Link>
 
-        {synopsisData?.deadline && (
+        {hackathonConfig?.synopsisDeadline && synopsisOpen && !synopsisClosed && (
           <div className="flex items-center gap-3 bg-amber-950/40 border border-amber-500/40 px-4 py-2 rounded-xl text-amber-300">
-            <span className="text-xs font-semibold">Synopsis Window:</span>
-            <CountdownTimer targetDate={synopsisData.deadline} urgentThresholdHours={24} />
+            <span className="text-xs font-semibold">Synopsis Window Closes:</span>
+            <CountdownTimer targetDate={hackathonConfig.synopsisDeadline} urgentThresholdHours={24} />
           </div>
         )}
       </div>
+
+      {/* Window Status Banner */}
+      {!synopsisOpen && (
+        <div className="flex items-center gap-3 p-4 bg-blue-950/40 border border-blue-500/40 rounded-xl text-blue-300">
+          <Lock className="w-5 h-5 shrink-0" />
+          <div>
+            <p className="text-sm font-bold">Submissions Not Yet Open</p>
+            <p className="text-xs text-blue-400">
+              Synopsis registration opens on{' '}
+              <strong>{hackathonConfig?.synopsisStartDate ? new Date(hackathonConfig.synopsisStartDate).toLocaleString() : '—'}</strong>.
+              Check back then!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {synopsisClosed && (
+        <div className="flex items-center gap-3 p-4 bg-rose-950/40 border border-rose-500/40 rounded-xl text-rose-300">
+          <Lock className="w-5 h-5 shrink-0" />
+          <div>
+            <p className="text-sm font-bold">Submission Window Closed</p>
+            <p className="text-xs text-rose-400">
+              The synopsis deadline was{' '}
+              <strong>{hackathonConfig?.synopsisDeadline ? new Date(hackathonConfig.synopsisDeadline).toLocaleString() : '—'}</strong>.
+              No further submissions are accepted.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Main Synopsis Card */}
       <Card
@@ -285,95 +364,44 @@ export const SynopsisSubmissionPage = () => {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-900/90 text-slate-400 font-mono uppercase tracking-wider text-[10px] border-b border-slate-800">
-                    <th className="py-2.5 px-3 font-bold">Evaluation Criteria</th>
-                    <th className="py-2.5 px-3 font-bold">Definition & Judging Scope</th>
-                    <th className="py-2.5 px-3 font-bold text-right">Weightage</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/80 text-slate-300">
-                  <tr className="hover:bg-slate-900/50 transition-colors">
-                    <td className="py-2.5 px-3 font-bold text-slate-100 flex items-center gap-2">
-                      <Target className="w-4 h-4 text-orange-400 shrink-0" />
-                      Problem Understanding & Relevance
-                    </td>
-                    <td className="py-2.5 px-3 text-slate-300 leading-relaxed">
-                      How clearly the Individual understands the problem statement, target users, constraints, and business context, and whether the solution directly addresses the stated problem.
-                    </td>
-                    <td className="py-2.5 px-3 font-mono font-bold text-orange-400 text-right shrink-0">10%</td>
-                  </tr>
-
-                  <tr className="hover:bg-slate-900/50 transition-colors">
-                    <td className="py-2.5 px-3 font-bold text-slate-100 flex items-center gap-2">
-                      <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
-                      Innovation & Originality
-                    </td>
-                    <td className="py-2.5 px-3 text-slate-300 leading-relaxed">
-                      The uniqueness of the idea, creativity in approach, and the extent to which the solution introduces a novel concept or significantly improves existing methods.
-                    </td>
-                    <td className="py-2.5 px-3 font-mono font-bold text-amber-400 text-right shrink-0">20%</td>
-                  </tr>
-
-                  <tr className="hover:bg-slate-900/50 transition-colors">
-                    <td className="py-2.5 px-3 font-bold text-slate-100 flex items-center gap-2">
-                      <ListChecks className="w-4 h-4 text-indigo-400 shrink-0" />
-                      Technical Implementation
-                    </td>
-                    <td className="py-2.5 px-3 text-slate-300 leading-relaxed">
-                      The quality of architecture, algorithms, coding practices, use of AI/ML, cloud, APIs, databases, or other relevant technologies, and overall technical complexity.
-                    </td>
-                    <td className="py-2.5 px-3 font-mono font-bold text-indigo-400 text-right shrink-0">20%</td>
-                  </tr>
-
-                  <tr className="hover:bg-slate-900/50 transition-colors">
-                    <td className="py-2.5 px-3 font-bold text-slate-100 flex items-center gap-2">
-                      <Package className="w-4 h-4 text-emerald-400 shrink-0" />
-                      Feasibility & Practicality
-                    </td>
-                    <td className="py-2.5 px-3 text-slate-300 leading-relaxed">
-                      Whether the solution can realistically be implemented in a production or enterprise environment, considering cost, resources, timeline, and operational constraints.
-                    </td>
-                    <td className="py-2.5 px-3 font-mono font-bold text-emerald-400 text-right shrink-0">15%</td>
-                  </tr>
-
-                  <tr className="hover:bg-slate-900/50 transition-colors">
-                    <td className="py-2.5 px-3 font-bold text-slate-100 flex items-center gap-2">
-                      <Award className="w-4 h-4 text-cyan-400 shrink-0" />
-                      Business Impact & Scalability
-                    </td>
-                    <td className="py-2.5 px-3 text-slate-300 leading-relaxed">
-                      The potential value delivered to users or organizations, including efficiency gains, cost reduction, revenue potential, scalability, and long-term sustainability.
-                    </td>
-                    <td className="py-2.5 px-3 font-mono font-bold text-cyan-400 text-right shrink-0">15%</td>
-                  </tr>
-
-                  <tr className="hover:bg-slate-900/50 transition-colors">
-                    <td className="py-2.5 px-3 font-bold text-slate-100 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-rose-400 shrink-0" />
-                      User Experience & Design
-                    </td>
-                    <td className="py-2.5 px-3 text-slate-300 leading-relaxed">
-                      Clarity of workflow, ease of use, accessibility, interface quality, and how effectively the solution solves the user’s problem from a usability perspective.
-                    </td>
-                    <td className="py-2.5 px-3 font-mono font-bold text-rose-400 text-right shrink-0">10%</td>
-                  </tr>
-
-                  <tr className="hover:bg-slate-900/50 transition-colors">
-                    <td className="py-2.5 px-3 font-bold text-slate-100 flex items-center gap-2">
-                      <Send className="w-4 h-4 text-violet-400 shrink-0" />
-                      Presentation & Demonstration
-                    </td>
-                    <td className="py-2.5 px-3 text-slate-300 leading-relaxed">
-                      Effectiveness of the final pitch, live demonstration, storytelling, communication skills, handling of Q&A, and overall clarity in presenting the solution.
-                    </td>
-                    <td className="py-2.5 px-3 font-mono font-bold text-violet-400 text-right shrink-0">10%</td>
-                  </tr>
-                </tbody>
-              </table>
+              {aiCriteria.length > 0 ? (
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-900/90 text-slate-400 font-mono uppercase tracking-wider text-[10px] border-b border-slate-800">
+                      <th className="py-2.5 px-3 font-bold">Evaluation Criteria</th>
+                      <th className="py-2.5 px-3 font-bold">Definition & Judging Scope</th>
+                      <th className="py-2.5 px-3 font-bold text-right">Weightage</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/80 text-slate-300">
+                    {aiCriteria.map((c) => (
+                      <tr key={c.id} className="hover:bg-slate-900/50 transition-colors">
+                        <td className="py-2.5 px-3 font-bold text-slate-100 flex items-center gap-2">
+                          <span>{c.title}</span>
+                          {c.problemStatementRef && (
+                            <span className="text-[9px] font-mono text-purple-300 bg-purple-950 px-1.5 py-0.5 rounded border border-purple-800">
+                              {c.problemStatementRef}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-300 leading-relaxed">
+                          {c.description || 'Assesses proposal quality and technical alignment.'}
+                        </td>
+                        <td className="py-2.5 px-3 font-mono font-bold text-purple-400 text-right shrink-0">
+                          {c.weightage}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-4 text-center text-xs text-slate-400 italic bg-slate-950/60 rounded-lg">
+                  AI Evaluation criteria for this track will be configured by the hackathon organizers.
+                </div>
+              )}
             </div>
           </div>
+
 
           {isSubmitted ? (
             /* Read-Only Mode */

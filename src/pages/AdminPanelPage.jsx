@@ -6,6 +6,9 @@ import { hackathonConfigService } from '../services/hackathonConfigService';
 import { AdminConfigPage } from './AdminConfigPage';
 import { AdminEvaluatorsPage } from './AdminEvaluatorsPage';
 import { AdminProblemStatementsPage } from './AdminProblemStatementsPage';
+import { AdminSynopsisAiCriteriaPage } from './AdminSynopsisAiCriteriaPage';
+import { AdminHackathonAiCriteriaPage } from './AdminHackathonAiCriteriaPage';
+
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -80,20 +83,14 @@ export const AdminPanelPage = () => {
   const [projectTitle, setProjectTitle] = useState('');
   const [declaring, setDeclaring] = useState(false);
 
-  const CATEGORY_OPTIONS = [
-    'IoT & Smart Cities',
-    'Artificial Intelligence & ML',
-    'Web3 & Blockchain',
-    'CleanTech & Sustainability',
-    'FinTech & Payments',
-    'Healthcare & MedTech',
-    'Cybersecurity & Privacy',
-    'EdTech & E-Learning',
-    'AR/VR & Gaming',
-    'DevOps & Cloud Automation',
+  const dynamicCategories = (problemStatements || [])
+    .map(ps => ps.category || ps.title)
+    .filter(Boolean);
+  const CATEGORY_OPTIONS = Array.from(new Set([
+    ...dynamicCategories,
     'Open Innovation Track',
-    'Custom Category (Type below)...',
-  ];
+    'Custom Category (Type below)...'
+  ]));
 
   const fetchSynopses = async (filter = statusFilter) => {
     setSynopsisLoading(true);
@@ -107,7 +104,7 @@ export const AdminPanelPage = () => {
       
       let msg = `Failed to load candidate synopsis submissions (${statusCode || 'Network'}): ${detailMsg}`;
       if (statusCode === 403) {
-        msg = 'Access Denied (403): Your account does not have ADMIN privileges. Please re-login with admin@hackathon.com / Admin@123.';
+        msg = 'Access Denied (403): Your account does not have ADMIN privileges. Please log in with an administrator account.';
       }
       toast.error(msg);
     } finally {
@@ -348,6 +345,26 @@ export const AdminPanelPage = () => {
             >
               Problem Statements
             </button>
+            <button
+              onClick={() => setActiveTab('ai-criteria')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'ai-criteria'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Synopsis AI Criteria
+            </button>
+            <button
+              onClick={() => setActiveTab('hackathon-ai-criteria')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'hackathon-ai-criteria'
+                  ? 'bg-orange-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Hackathon Criteria
+            </button>
           </div>
         </div>
       </div>
@@ -358,7 +375,12 @@ export const AdminPanelPage = () => {
         <AdminEvaluatorsPage embedded />
       ) : activeTab === 'problems' ? (
         <AdminProblemStatementsPage embedded />
+      ) : activeTab === 'ai-criteria' ? (
+        <AdminSynopsisAiCriteriaPage />
+      ) : activeTab === 'hackathon-ai-criteria' ? (
+        <AdminHackathonAiCriteriaPage />
       ) : activeTab === 'synopses' ? (
+
         /* Tab 1: Synopsis Proposals Review */
         <Card
           title="Candidate Synopsis Proposals"
@@ -397,7 +419,6 @@ export const AdminPanelPage = () => {
                     <th className="py-3 px-4">Submission ID</th>
                     <th className="py-3 px-4">Track Ref</th>
                     <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Synopsis Score</th>
                     <th className="py-3 px-4">Submitted At</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
@@ -416,19 +437,6 @@ export const AdminPanelPage = () => {
                           <td className="py-3.5 px-4 font-mono text-slate-300">{item.problemStatementRef || 'PS-01'}</td>
                           <td className="py-3.5 px-4">
                             <Badge status={item.synopsisStatus} />
-                          </td>
-                          <td className="py-3.5 px-4">
-                            {(() => {
-                              const scoreVal = item.averageScore ?? item.aggregatedScore ?? item.score ?? item.totalScore;
-                              return scoreVal != null ? (
-                                <span className="inline-flex items-center gap-1 font-mono text-xs text-amber-300 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded font-bold">
-                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                  {Number(scoreVal).toFixed(1)} / 100
-                                </span>
-                              ) : (
-                                <span className="text-[11px] font-mono text-slate-500 italic">Not Rated</span>
-                              );
-                            })()}
                           </td>
                           <td className="py-3.5 px-4 text-slate-400 font-mono">
                             {item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : 'N/A'}
@@ -529,7 +537,6 @@ export const AdminPanelPage = () => {
                     <th className="py-3 px-4">GitHub Repository</th>
                     <th className="py-3 px-4">Live App Demo</th>
                     <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Project Score</th>
                     <th className="py-3 px-4">Submitted At</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
@@ -586,19 +593,6 @@ export const AdminPanelPage = () => {
                         >
                           {item.status}
                         </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        {(() => {
-                          const scoreVal = item.averageScore ?? item.aggregatedScore ?? item.score ?? item.totalScore;
-                          return scoreVal != null ? (
-                            <span className="inline-flex items-center gap-1 font-mono text-xs text-amber-300 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded font-bold">
-                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                              {Number(scoreVal).toFixed(1)} / 100
-                            </span>
-                          ) : (
-                            <span className="text-[11px] font-mono text-slate-500 italic">Not Rated</span>
-                          );
-                        })()}
                       </td>
                       <td className="py-3.5 px-4 text-slate-400 font-mono">
                         {item.submissionTime ? new Date(item.submissionTime).toLocaleString() : 'In Progress'}

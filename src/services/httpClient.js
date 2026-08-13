@@ -1,15 +1,14 @@
 import axios from 'axios';
 import { OpenAPI } from '../sdk/core/OpenAPI';
 
-// Default to relative /api which Vite proxies to Spring Boot (http://localhost:8080)
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
-
-// Configure generated OpenAPI SDK Defaults
-OpenAPI.BASE = BASE_URL;
+// OpenAPI SDK endpoint URLs already start with '/api' (e.g. '/api/auth/login').
+// Setting OpenAPI.BASE to '' ensures request paths become '/api/auth/login',
+// which Vite dev server proxies to Spring Boot on http://localhost:8080.
+OpenAPI.BASE = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '') : '';
 OpenAPI.TOKEN = async () => localStorage.getItem('auth_token') || '';
 
 export const httpClient = axios.create({
-  baseURL: BASE_URL,
+  baseURL: '',
   headers: {
     'Content-Type': 'application/json',
   },

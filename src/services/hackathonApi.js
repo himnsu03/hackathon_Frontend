@@ -1,36 +1,34 @@
+import { HackathonCoreService } from '../sdk';
 import { httpClient } from './httpClient';
 
 export const hackathonApi = {
   /**
-   * Get hackathon status and server-synced remaining time from backend
+   * Get hackathon status via SDK
    */
   async getStatus() {
-    const response = await httpClient.get('/hackathon/status');
-    return response.data;
+    return await HackathonCoreService.getHackathonStatus();
   },
 
   /**
-   * Get Problem Statement details from backend
+   * Get Problem Statement details via SDK
    */
   async getProblemStatement() {
     try {
-      const response = await httpClient.get('/hackathon/problem-statement');
-      return response.data;
+      return await HackathonCoreService.getAssignedProblemStatement();
     } catch {
       return null;
     }
   },
 
   /**
-   * Start hackathon timer for candidate
+   * Start hackathon timer for candidate via SDK
    */
   async startHackathon() {
-    const response = await httpClient.post('/hackathon/start');
-    return response.data;
+    return await HackathonCoreService.startHackathon();
   },
 
   /**
-   * Submit Hackathon Project (GitHub + Live URL) to backend
+   * Submit Hackathon Project to backend via SDK
    * @param {Object} data - { githubRepoUrl, liveAppUrl }
    */
   async submitProject(data) {
@@ -38,7 +36,20 @@ export const hackathonApi = {
       githubRepoUrl: data.githubRepoUrl || data.githubUrl,
       liveAppUrl: data.liveAppUrl || '',
     };
-    const response = await httpClient.post('/hackathon/submit', payload);
-    return response.data;
+    return await HackathonCoreService.submitHackathon(payload);
+  },
+
+  /**
+   * Get public Hackathon AI Evaluation Criteria
+   */
+  async getPublicHackathonAiCriteria(hackathonConfigId = 1) {
+    try {
+      const res = await httpClient.get('/api/public/hackathon-ai-criteria', {
+        params: { hackathonConfigId },
+      });
+      return res.data;
+    } catch {
+      return [];
+    }
   },
 };

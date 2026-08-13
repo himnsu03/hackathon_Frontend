@@ -1,34 +1,42 @@
+import {
+  AdminSynopsisManagementService,
+  AdminResultManagementService,
+  SynopsisAiEvaluationCriteriaService,
+  AdminHackathonConfigService,
+  AdminProblemStatementService,
+  AdminEvaluatorService,
+} from '../sdk';
 import { httpClient } from './httpClient';
 
 export const adminApi = {
   /**
-   * Get candidate synopsis submissions from backend
+   * Get candidate synopsis submissions from backend via SDK
    * @param {string} filterStatus - PENDING | SHORTLISTED | REJECTED | ALL
    */
   async getAllSynopses(filterStatus = 'PENDING') {
     if (filterStatus === 'ALL') {
       try {
         const [pendingRes, shortlistedRes, rejectedRes] = await Promise.allSettled([
-          httpClient.get('/admin/synopsis', { params: { status: 'PENDING', size: 100 } }),
-          httpClient.get('/admin/synopsis', { params: { status: 'SHORTLISTED', size: 100 } }),
-          httpClient.get('/admin/synopsis', { params: { status: 'REJECTED', size: 100 } }),
+          AdminSynopsisManagementService.getSubmissions('PENDING', 0, 100),
+          AdminSynopsisManagementService.getSubmissions('SHORTLISTED', 0, 100),
+          AdminSynopsisManagementService.getSubmissions('REJECTED', 0, 100),
         ]);
 
         const combined = [];
-        if (pendingRes.status === 'fulfilled') combined.push(...(pendingRes.value.data?.content || []));
-        if (shortlistedRes.status === 'fulfilled') combined.push(...(shortlistedRes.value.data?.content || []));
-        if (rejectedRes.status === 'fulfilled') combined.push(...(rejectedRes.value.data?.content || []));
+        if (pendingRes.status === 'fulfilled') combined.push(...(pendingRes.value.content || []));
+        if (shortlistedRes.status === 'fulfilled') combined.push(...(shortlistedRes.value.content || []));
+        if (rejectedRes.status === 'fulfilled') combined.push(...(rejectedRes.value.content || []));
 
         return { synopses: mapSynopsisList(combined) };
       } catch {
-        const res = await httpClient.get('/admin/synopsis', { params: { status: 'PENDING', size: 100 } });
-        return { synopses: mapSynopsisList(res.data?.content || []) };
+        const res = await AdminSynopsisManagementService.getSubmissions('PENDING', 0, 100);
+        return { synopses: mapSynopsisList(res.content || []) };
       }
     }
 
     const validStatus = ['PENDING', 'SHORTLISTED', 'REJECTED'].includes(filterStatus) ? filterStatus : 'PENDING';
-    const response = await httpClient.get('/admin/synopsis', { params: { status: validStatus, size: 100 } });
-    const content = response.data?.content || response.data?.items || response.data || [];
+    const response = await AdminSynopsisManagementService.getSubmissions(validStatus, 0, 100);
+    const content = response.content || response.items || response || [];
     return { synopses: mapSynopsisList(content) };
   },
 
@@ -36,40 +44,37 @@ export const adminApi = {
    * Get single synopsis detail for admin review
    */
   async getSynopsisById(id) {
-    const response = await httpClient.get(`/admin/synopsis/${id}`);
+    const response = await httpClient.get(`/api/admin/synopsis/${id}`);
     return response.data;
   },
 
   /**
-   * Get all final project submissions (GitHub Repo & Live Demo URLs)
+   * Get all final project submissions (GitHub Repo & Live Demo URLs) via SDK
    */
   async getProjectSubmissions() {
-    const response = await httpClient.get('/admin/synopsis/projects');
-    return response.data || [];
+    return await AdminSynopsisManagementService.getAllProjectSubmissions();
   },
 
   /**
    * Get single hackathon submission detail for admin review
    */
   async getHackathonSubmissionById(id) {
-    const response = await httpClient.get(`/admin/hackathon-submissions/${id}`);
+    const response = await httpClient.get(`/api/admin/hackathon-submissions/${id}`);
     return response.data;
   },
 
   /**
-   * Shortlist candidate synopsis
+   * Shortlist candidate synopsis via SDK
    */
   async shortlistSynopsis(synopsisId) {
-    const response = await httpClient.post(`/admin/synopsis/${synopsisId}/shortlist`);
-    return response.data;
+    return await AdminSynopsisManagementService.shortlistSynopsis(synopsisId);
   },
 
   /**
-   * Reject candidate synopsis
+   * Reject candidate synopsis via SDK
    */
   async rejectSynopsis(synopsisId) {
-    const response = await httpClient.post(`/admin/synopsis/${synopsisId}/reject`);
-    return response.data;
+    return await AdminSynopsisManagementService.rejectSynopsis(synopsisId);
   },
 
   /**
@@ -84,17 +89,13 @@ export const adminApi = {
   },
 
   /**
-   * Hackathon Config Endpoints
-   * Backend: PUT /admin/hackathon-config
+   * Hackathon Config Endpoints via SDK
    */
   async getConfig() {
-    const response = await httpClient.get('/admin/hackathon-config');
-    return response.data;
+    return await AdminHackathonConfigService.getConfig();
   },
 
   async updateConfig(_id, configData) {
-    // Backend expects java.time.Instant → full ISO-8601 with seconds and Z offset.
-    // datetime-local inputs produce "2026-08-11T11:58" which must become "2026-08-11T11:58:00Z".
     const toInstant = (val) => {
       if (!val) return null;
       if (val.endsWith('Z') || (val.length > 19 && val.includes('+'))) return val;
@@ -103,27 +104,32 @@ export const adminApi = {
     };
 
     const payload = {
+      title: configData.title,
+      eligibilityCriteria: configData.eligibilityCriteria,
+      eligiblePassingYears: configData.eligiblePassingYears,
       synopsisStartDate: toInstant(configData.synopsisStartDate),
       synopsisDeadline: toInstant(configData.synopsisDeadline),
+      synopsisResultDate: toInstant(configData.synopsisResultDate),
       hackathonStartDate: toInstant(configData.hackathonStartDate),
       hackathonEndDate: toInstant(configData.hackathonEndDate),
+      hackathonResultDate: toInstant(configData.hackathonResultDate),
+      interviewStartDate: toInstant(configData.interviewStartDate),
+      interviewEndDate: toInstant(configData.interviewEndDate),
       durationHours: parseInt(configData.durationHours, 10) || 24,
     };
-    const response = await httpClient.put('/admin/hackathon-config', payload);
-    return response.data;
+    return await AdminHackathonConfigService.updateConfig(payload);
   },
 
-  // createConfig aliases updateConfig (backend has single PUT, no POST create)
   async createConfig(configData) {
     return this.updateConfig(null, configData);
   },
 
   /**
-   * Problem Statement Management Endpoints
+   * Problem Statement Management Endpoints via SDK
    */
   async getProblemStatements() {
-    const response = await httpClient.get('/admin/problem-statements');
-    return response.data?.content || response.data?.items || response.data || [];
+    const response = await AdminProblemStatementService.getProblemStatements();
+    return response?.content || response?.items || response || [];
   },
 
   async createProblemStatement(data) {
@@ -148,8 +154,7 @@ export const adminApi = {
       deliverables: delivs,
       useCases: useCases,
     };
-    const response = await httpClient.post('/admin/problem-statements', payload);
-    return response.data;
+    return await AdminProblemStatementService.createProblemStatement(payload);
   },
 
   async updateProblemStatement(id, data) {
@@ -174,48 +179,44 @@ export const adminApi = {
       deliverables: delivs,
       useCases: useCases,
     };
-    const response = await httpClient.put(`/admin/problem-statements/${id}`, payload);
-    return response.data;
+    return await AdminProblemStatementService.updateProblemStatement(id, payload);
   },
 
   async deactivateProblemStatement(id) {
-    const response = await httpClient.delete(`/admin/problem-statements/${id}`);
-    return response.data;
+    return await AdminProblemStatementService.deactivateProblemStatement(id);
   },
 
   /**
-   * Evaluator Management Endpoints
+   * Evaluator Management Endpoints via SDK
    */
   async getEvaluators() {
-    const response = await httpClient.get('/admin/evaluators');
-    return response.data?.content || response.data?.items || response.data || [];
+    const response = await AdminEvaluatorService.getEvaluators();
+    return response?.content || response?.items || response || [];
   },
 
   async addEvaluator(data) {
-    const response = await httpClient.post('/admin/evaluators', data);
-    return response.data;
+    return await AdminEvaluatorService.addEvaluator(data);
   },
 
   async revokeEvaluator(id) {
-    const response = await httpClient.delete(`/admin/evaluators/${id}`);
-    return response.data;
+    return await AdminEvaluatorService.revokeEvaluator(id);
   },
 
   /**
    * AI Evaluation & Full Review Endpoints for Synopsis
    */
   async getSynopsisAiEvaluation(synopsisId) {
-    const response = await httpClient.get(`/admin/synopsis/${synopsisId}/ai-evaluation`);
+    const response = await httpClient.get(`/api/admin/synopsis/${synopsisId}/ai-evaluation`);
     return response.data;
   },
 
   async runSynopsisAiEvaluate(synopsisId) {
-    const response = await httpClient.post(`/admin/synopsis/${synopsisId}/ai-evaluate`);
+    const response = await httpClient.post(`/api/admin/synopsis/${synopsisId}/ai-evaluate`);
     return response.data;
   },
 
   async getSynopsisFullReview(synopsisId) {
-    const response = await httpClient.get(`/admin/synopsis/${synopsisId}/full-review`);
+    const response = await httpClient.get(`/api/admin/synopsis/${synopsisId}/full-review`);
     return response.data?.evaluations || response.data || [];
   },
 
@@ -223,22 +224,22 @@ export const adminApi = {
    * AI Evaluation & Full Review Endpoints for Hackathon Submissions
    */
   async getHackathonAiEvaluation(submissionId) {
-    const response = await httpClient.get(`/admin/hackathon-submissions/${submissionId}/ai-evaluation`);
+    const response = await httpClient.get(`/api/admin/hackathon-submissions/${submissionId}/ai-evaluation`);
     return response.data;
   },
 
   async runHackathonAiEvaluate(submissionId) {
-    const response = await httpClient.post(`/admin/hackathon-submissions/${submissionId}/ai-evaluate`);
+    const response = await httpClient.post(`/api/admin/hackathon-submissions/${submissionId}/ai-evaluate`);
     return response.data;
   },
 
   async getHackathonFullReview(submissionId) {
-    const response = await httpClient.get(`/admin/hackathon-submissions/${submissionId}/full-review`);
+    const response = await httpClient.get(`/api/admin/hackathon-submissions/${submissionId}/full-review`);
     return response.data?.evaluations || response.data || [];
   },
 
   /**
-   * Declare single result matching Spring Boot DeclareResultDto
+   * Declare single result matching Spring Boot DeclareResultDto via SDK
    */
   async declareResult(resultData) {
     const positionMap = {
@@ -257,12 +258,11 @@ export const adminApi = {
       position: positionMap[resultData.position] || 'FIRST',
     };
 
-    const response = await httpClient.post('/admin/results/declare', payload);
-    return response.data;
+    return await AdminResultManagementService.declareResult(payload);
   },
 
   /**
-   * Declare multiple results
+   * Declare multiple results via SDK
    */
   async declareResults(resultsList) {
     const promises = resultsList.map((res) =>
@@ -273,6 +273,95 @@ export const adminApi = {
     );
     await Promise.all(promises);
     return { success: true, message: 'Results declared successfully and published live to public leaderboard!' };
+  },
+
+  /**
+   * Get all Synopsis AI Evaluation Criteria via SDK
+   */
+  async getAllSynopsisAiCriteria(hackathonConfigId = null) {
+    try {
+      return await SynopsisAiEvaluationCriteriaService.getAllCriteria(hackathonConfigId);
+    } catch (err) {
+      try {
+        return await SynopsisAiEvaluationCriteriaService.getApplicableCriteria(hackathonConfigId);
+      } catch {
+        throw err;
+      }
+    }
+  },
+
+  /**
+   * Create Synopsis AI Evaluation Criteria via SDK
+   */
+  async createSynopsisAiCriteria(data) {
+    return await SynopsisAiEvaluationCriteriaService.createCriteria(data);
+  },
+
+  /**
+   * Update Synopsis AI Evaluation Criteria via SDK
+   */
+  async updateSynopsisAiCriteria(id, data) {
+    return await SynopsisAiEvaluationCriteriaService.updateCriteria(id, data);
+  },
+
+  /**
+   * Delete Synopsis AI Evaluation Criteria via SDK
+   */
+  async deleteSynopsisAiCriteria(id) {
+    return await SynopsisAiEvaluationCriteriaService.deleteCriteria(id);
+  },
+
+  /**
+   * Get public/applicable Synopsis AI Evaluation Criteria via SDK
+   */
+  async getPublicSynopsisAiCriteria(hackathonConfigId = null, problemStatementRef = null) {
+    return await SynopsisAiEvaluationCriteriaService.getApplicableCriteria(hackathonConfigId, problemStatementRef || undefined);
+  },
+
+  // ─── Hackathon Project AI Evaluation Criteria ───────────────────────────────
+
+  /**
+   * Get all Hackathon AI Evaluation Criteria (admin)
+   */
+  async getAllHackathonAiCriteria(hackathonConfigId = 1) {
+    const res = await httpClient.get('/api/admin/hackathon-ai-criteria', {
+      params: hackathonConfigId ? { hackathonConfigId } : {},
+    });
+    return res.data;
+  },
+
+  /**
+   * Get public/active Hackathon AI Evaluation Criteria
+   */
+  async getPublicHackathonAiCriteria(hackathonConfigId = 1) {
+    const res = await httpClient.get('/api/public/hackathon-ai-criteria', {
+      params: hackathonConfigId ? { hackathonConfigId } : {},
+    });
+    return res.data;
+  },
+
+  /**
+   * Create a Hackathon AI Evaluation Criteria entry (admin)
+   */
+  async createHackathonAiCriteria(data) {
+    const res = await httpClient.post('/api/admin/hackathon-ai-criteria', data);
+    return res.data;
+  },
+
+  /**
+   * Update a Hackathon AI Evaluation Criteria entry (admin)
+   */
+  async updateHackathonAiCriteria(id, data) {
+    const res = await httpClient.put(`/api/admin/hackathon-ai-criteria/${id}`, data);
+    return res.data;
+  },
+
+  /**
+   * Delete a Hackathon AI Evaluation Criteria entry (admin)
+   */
+  async deleteHackathonAiCriteria(id) {
+    const res = await httpClient.delete(`/api/admin/hackathon-ai-criteria/${id}`);
+    return res.data;
   },
 };
 

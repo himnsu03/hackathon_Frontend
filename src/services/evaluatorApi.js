@@ -1,3 +1,4 @@
+import { EvaluatorService } from '../sdk';
 import { httpClient } from './httpClient';
 
 export const evaluatorApi = {
@@ -5,23 +6,23 @@ export const evaluatorApi = {
    * Get public hackathon config
    */
   async getPublicConfig() {
-    const response = await httpClient.get('/public/hackathon-config');
+    const response = await httpClient.get('/api/public/hackathon-config');
     return response.data || {};
   },
 
   /**
-   * GET /api/evaluator/synopsis
+   * GET /api/evaluator/synopsis via SDK
    */
   async getSynopses() {
-    const response = await httpClient.get('/evaluator/synopsis');
-    return response.data?.content || response.data?.items || response.data || [];
+    const response = await EvaluatorService.getSynopsesToEvaluate();
+    return response?.content || response?.items || response || [];
   },
 
   /**
    * GET /api/evaluator/synopsis/:id
    */
   async getSynopsisById(id) {
-    const response = await httpClient.get(`/evaluator/synopsis/${id}`);
+    const response = await httpClient.get(`/api/evaluator/synopsis/${id}`);
     return response.data;
   },
 
@@ -30,7 +31,7 @@ export const evaluatorApi = {
    */
   async getMySynopsisEvaluation(id) {
     try {
-      const response = await httpClient.get(`/evaluator/synopsis/${id}/evaluations`);
+      const response = await httpClient.get(`/api/evaluator/synopsis/${id}/evaluations`);
       return response.data;
     } catch {
       return null;
@@ -38,28 +39,29 @@ export const evaluatorApi = {
   },
 
   /**
-   * POST /api/evaluator/synopsis/:id/evaluate
+   * POST /api/evaluator/synopsis/:id/evaluate via SDK
    */
   async evaluateSynopsis(id, evaluationData) {
-    const response = await httpClient.post(`/evaluator/synopsis/${id}/evaluate`, evaluationData);
-    return response.data;
+    return await EvaluatorService.evaluateSynopsis(id, evaluationData);
   },
 
   /**
-   * GET /api/evaluator/hackathon-submissions
+   * GET /api/evaluator/hackathon-submissions via SDK
    */
   async getHackathonSubmissions(status) {
-    const params = {};
-    if (status && status !== 'ALL') params.status = status;
-    const response = await httpClient.get('/evaluator/hackathon-submissions', { params });
-    return response.data?.content || response.data?.items || response.data || [];
+    const response = await EvaluatorService.getHackathonSubmissionsToEvaluate();
+    const content = response?.content || response?.items || response || [];
+    if (status && status !== 'ALL') {
+      return content.filter((item) => item.status === status);
+    }
+    return content;
   },
 
   /**
    * GET /api/evaluator/hackathon-submissions/:id
    */
   async getHackathonSubmissionById(id) {
-    const response = await httpClient.get(`/evaluator/hackathon-submissions/${id}`);
+    const response = await httpClient.get(`/api/evaluator/hackathon-submissions/${id}`);
     return response.data;
   },
 
@@ -68,7 +70,7 @@ export const evaluatorApi = {
    */
   async getMyHackathonEvaluation(id) {
     try {
-      const response = await httpClient.get(`/evaluator/hackathon-submissions/${id}/evaluations`);
+      const response = await httpClient.get(`/api/evaluator/hackathon-submissions/${id}/evaluations`);
       return response.data;
     } catch {
       return null;
@@ -76,18 +78,17 @@ export const evaluatorApi = {
   },
 
   /**
-   * POST /api/evaluator/hackathon-submissions/:id/evaluate
+   * POST /api/evaluator/hackathon-submissions/:id/evaluate via SDK
    */
   async evaluateHackathonSubmission(id, evaluationData) {
-    const response = await httpClient.post(`/evaluator/hackathon-submissions/${id}/evaluate`, evaluationData);
-    return response.data;
+    return await EvaluatorService.evaluateHackathonSubmission(id, evaluationData);
   },
 
   /**
    * POST /api/evaluator/hackathon-submissions/:id/shortlist
    */
   async shortlistHackathonSubmission(id) {
-    const response = await httpClient.post(`/evaluator/hackathon-submissions/${id}/shortlist`);
+    const response = await httpClient.post(`/api/evaluator/hackathon-submissions/${id}/shortlist`);
     return response.data;
   },
 
@@ -95,7 +96,7 @@ export const evaluatorApi = {
    * POST /api/evaluator/hackathon-submissions/:id/reject
    */
   async rejectHackathonSubmission(id) {
-    const response = await httpClient.post(`/evaluator/hackathon-submissions/${id}/reject`);
+    const response = await httpClient.post(`/api/evaluator/hackathon-submissions/${id}/reject`);
     return response.data;
   },
 
@@ -103,7 +104,7 @@ export const evaluatorApi = {
    * POST /api/evaluator/synopsis/:id/shortlist
    */
   async shortlistSynopsis(id) {
-    const response = await httpClient.post(`/evaluator/synopsis/${id}/shortlist`);
+    const response = await httpClient.post(`/api/evaluator/synopsis/${id}/shortlist`);
     return response.data;
   },
 
@@ -111,7 +112,7 @@ export const evaluatorApi = {
    * POST /api/evaluator/synopsis/:id/reject
    */
   async rejectSynopsis(id) {
-    const response = await httpClient.post(`/evaluator/synopsis/${id}/reject`);
+    const response = await httpClient.post(`/api/evaluator/synopsis/${id}/reject`);
     return response.data;
   },
 };

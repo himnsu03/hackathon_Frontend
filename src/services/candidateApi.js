@@ -1,20 +1,21 @@
+import { CandidateDashboardService, HackathonCoreService, PublicResultsService } from '../sdk';
 import { httpClient } from './httpClient';
 
 export const candidateApi = {
   /**
-   * Get Candidate Dashboard details from backend and calculate real-time dynamic timeline
+   * Get Candidate Dashboard details from backend via SDK services
    */
   async getDashboard() {
     const [dashboardRes, hackathonStatusRes, resultsRes, resumeRes] = await Promise.allSettled([
-      httpClient.get('/candidate/dashboard'),
-      httpClient.get('/hackathon/status'),
-      httpClient.get('/results'),
-      httpClient.get('/candidate/resume'),
+      CandidateDashboardService.getDashboard(),
+      HackathonCoreService.getHackathonStatus(),
+      PublicResultsService.getResults(),
+      httpClient.get('/api/candidate/resume'),
     ]);
 
-    const data = dashboardRes.status === 'fulfilled' ? dashboardRes.value.data : {};
-    const hackathonData = hackathonStatusRes.status === 'fulfilled' ? hackathonStatusRes.value.data : {};
-    const resultsList = resultsRes.status === 'fulfilled' ? (Array.isArray(resultsRes.value.data) ? resultsRes.value.data : resultsRes.value.data?.results || []) : [];
+    const data = dashboardRes.status === 'fulfilled' ? dashboardRes.value : {};
+    const hackathonData = hackathonStatusRes.status === 'fulfilled' ? hackathonStatusRes.value : {};
+    const resultsList = resultsRes.status === 'fulfilled' ? (Array.isArray(resultsRes.value) ? resultsRes.value : resultsRes.value?.results || []) : [];
     const resumeData = resumeRes.status === 'fulfilled' ? resumeRes.value.data : null;
 
     const userObj = data.user || {};
@@ -100,7 +101,7 @@ export const candidateApi = {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const response = await httpClient.post('/candidate/resume', formData, {
+      const response = await httpClient.post('/api/candidate/resume', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -108,14 +109,14 @@ export const candidateApi = {
       return response.data;
     } catch (err) {
       console.warn('[candidateApi] uploadResume direct multipart failed, trying upload-url:', err.message);
-      const urlRes = await httpClient.post('/candidate/resume/upload-url', {
+      const urlRes = await httpClient.post('/api/candidate/resume/upload-url', {
         fileName: file.name,
         contentType: file.type,
       });
       const { uploadUrl } = urlRes.data;
       if (uploadUrl) {
         await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-        const confirmRes = await httpClient.post('/candidate/resume/confirm', { fileName: file.name });
+        const confirmRes = await httpClient.post('/api/candidate/resume/confirm', { fileName: file.name });
         return confirmRes.data;
       }
       throw err;
@@ -127,7 +128,7 @@ export const candidateApi = {
    */
   async getResumeInfo() {
     try {
-      const response = await httpClient.get('/candidate/resume');
+      const response = await httpClient.get('/api/candidate/resume');
       return response.data;
     } catch {
       return null;

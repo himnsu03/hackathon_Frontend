@@ -21,12 +21,14 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
 
-const formatDate = (isoString, defaultText) => {
+const formatDate = (isoString, defaultText = 'To be announced') => {
   if (!isoString) return defaultText;
   try {
     const d = new Date(isoString);
     if (isNaN(d.getTime())) return defaultText;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    return `${dateStr} • ${timeStr}`;
   } catch {
     return defaultText;
   }
@@ -73,18 +75,16 @@ const RulesAccordion = () => {
         return (
           <div
             key={rule.id}
-            className={`border rounded-xl overflow-hidden transition-all duration-200 ${
-              isOpen
-                ? 'border-orange-500/80 bg-slate-900/90 shadow-[0_0_20px_rgba(249,115,22,0.15)] ring-1 ring-orange-500/50'
-                : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
-            }`}
+            className={`border rounded-xl overflow-hidden transition-all duration-200 ${isOpen
+              ? 'border-orange-500/80 bg-slate-900/90 shadow-[0_0_20px_rgba(249,115,22,0.15)] ring-1 ring-orange-500/50'
+              : 'border-slate-800 bg-slate-950/40 hover:border-slate-700'
+              }`}
           >
             <button
               type="button"
               onClick={() => toggleSection(rule.id)}
-              className={`w-full p-4 text-left flex items-center justify-between text-sm font-bold transition-colors cursor-pointer ${
-                isOpen ? 'text-orange-400' : 'text-slate-200 hover:text-orange-400'
-              }`}
+              className={`w-full p-4 text-left flex items-center justify-between text-sm font-bold transition-colors cursor-pointer ${isOpen ? 'text-orange-400' : 'text-slate-200 hover:text-orange-400'
+                }`}
             >
               <span>{rule.title}</span>
               {isOpen ? (
@@ -129,13 +129,13 @@ export const LandingPage = () => {
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-8 mt-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/80 border border-slate-800 text-xs font-semibold text-slate-300 shadow-inner">
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-            Contata Solutions Hiring Hackathon 2026
+            {config?.title ? `${config.title} Hiring Portal` : 'Contata Solutions Hiring Hackathon 2026'}
           </div>
 
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white leading-tight">
             Innovate. Build. <br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-500 via-amber-400 to-red-500">
-              Contata Hackathon 2026
+              {config?.title || 'Contata Hackathon 2026'}
             </span>
           </h1>
 
@@ -179,7 +179,7 @@ export const LandingPage = () => {
           <div className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-slate-900/80 border border-slate-800/90 text-xs sm:text-sm text-slate-300 shadow-md backdrop-blur-md hover:border-slate-700/90 transition-colors">
             <span className="text-base shrink-0">🎓</span>
             <span>
-              <strong className="text-slate-100 font-bold">Eligibility Criteria:</strong> Only candidates from the <span className="text-orange-400 font-semibold">2025</span> and <span className="text-orange-400 font-semibold">2026</span> graduating batches are eligible to register.
+              <strong className="text-slate-100 font-bold">Eligibility Criteria:</strong> <span className="text-orange-400 font-semibold">{config?.eligibilityCriteria || (config?.eligiblePassingYears ? `${config.eligiblePassingYears} Passing Batches` : 'Open to All Batches')}</span>.
             </span>
           </div>
         </div>
@@ -195,163 +195,195 @@ export const LandingPage = () => {
           {/* Chevron Pipeline Container - Interlocking Ribbon */}
           <div className="flex flex-col lg:flex-row items-stretch justify-center gap-6 lg:gap-0 lg:-space-x-6 relative max-w-7xl mx-auto py-4">
 
-            {/* PHASE 01: Registration Closes */}
+            {/* PHASE 01: Registration Opens */}
             <div className="flex-1 group relative flex flex-col transition-transform duration-300 hover:-translate-y-1 hover:z-30 z-10">
               <div
                 className="w-full h-full p-[2px] bg-gradient-to-r from-sky-500 via-sky-400 to-blue-600 shadow-[0_0_20px_rgba(56,189,248,0.25)] group-hover:shadow-[0_0_35px_rgba(56,189,248,0.5)] transition-all"
                 style={{
-                  clipPath: 'polygon(0% 0%, calc(100% - 30px) 0%, 100% 50%, calc(100% - 30px) 100%, 0% 100%)',
+                  clipPath: 'polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%)',
                 }}
               >
                 <div
-                  className="w-full h-full bg-[#0a1222]/95 backdrop-blur-xl p-6 pr-11 flex flex-col justify-between space-y-4"
+                  className="w-full h-full bg-[#0a1222]/95 backdrop-blur-xl p-5 pr-9 flex flex-col justify-between space-y-3"
                   style={{
-                    clipPath: 'polygon(0% 0%, calc(100% - 30px) 0%, 100% 50%, calc(100% - 30px) 100%, 0% 100%)',
+                    clipPath: 'polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%)',
                   }}
                 >
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 shadow-inner">
-                        <Calendar className="w-5 h-5" />
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="w-9 h-9 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 shadow-inner">
+                        <Calendar className="w-4 h-4" />
                       </div>
-                      <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-sky-400 bg-sky-500/10 border border-sky-500/30 px-2.5 py-1 rounded-full">
+                      <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-sky-400 bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 rounded-full">
                         PHASE 01
                       </span>
                     </div>
 
-                    <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight mb-1">
+                    <h3 className="text-sm sm:text-base font-extrabold text-white tracking-tight mb-1">
                       Registration Opens
                     </h3>
-                    <p className="text-xl sm:text-2xl font-black text-sky-400 mb-2 drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]">
-                      {formatDate(config?.synopsisStartDate, 'Sept 15, 2026')}
+                    <p className="text-base sm:text-lg font-black text-sky-400 mb-1 drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]">
+                      {formatDate(config?.synopsisStartDate)}
                     </p>
-                    <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                      Open for all software engineers, students, and industry candidates worldwide.
+                    <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                      Open for all eligible candidate registrations and proposal submissions.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* PHASE 02: Synopsis Submission */}
+            {/* PHASE 02: Synopsis Submission & Shortlist */}
             <div className="flex-1 group relative flex flex-col transition-transform duration-300 hover:-translate-y-1 hover:z-30 z-20">
               <div
                 className="w-full h-full p-[2px] bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 shadow-[0_0_20px_rgba(251,191,36,0.25)] group-hover:shadow-[0_0_35px_rgba(251,191,36,0.5)] transition-all"
                 style={{
-                  clipPath: 'polygon(0% 0%, calc(100% - 30px) 0%, 100% 50%, calc(100% - 30px) 100%, 0% 100%, 30px 50%)',
+                  clipPath: 'polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%, 24px 50%)',
                 }}
               >
                 <div
-                  className="w-full h-full bg-[#0c1220]/95 backdrop-blur-xl p-6 pl-10 pr-11 flex flex-col justify-between space-y-4"
+                  className="w-full h-full bg-[#0c1220]/95 backdrop-blur-xl p-5 pl-8 pr-9 flex flex-col justify-between space-y-3"
                   style={{
-                    clipPath: 'polygon(0% 0%, calc(100% - 30px) 0%, 100% 50%, calc(100% - 30px) 100%, 0% 100%, 30px 50%)',
+                    clipPath: 'polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%, 24px 50%)',
                   }}
                 >
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
-                        <Clock className="w-5 h-5" />
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
+                        <Clock className="w-4 h-4" />
                       </div>
-                      <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full">
+                      <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
                         PHASE 02
                       </span>
                     </div>
 
-                    <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight mb-1">
-                      Synopsis Submission
+                    <h3 className="text-sm sm:text-base font-extrabold text-white tracking-tight mb-1">
+                      Synopsis Shortlist
                     </h3>
-                    <p className="text-lg sm:text-xl font-black text-amber-400 mb-2 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
-                      {formatDate(config?.synopsisDeadline, 'Sept 18 • 18:00 UTC')}
+                    <p className="text-base sm:text-lg font-black text-amber-400 mb-1 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
+                      {formatDate(config?.synopsisResultDate || config?.synopsisDeadline)}
                     </p>
-                    <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                      Maximum 2,000 words project proposal submission required for manual review and shortlisting.
+                    <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                      Proposal review & shortlist results announced for coding round.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* PHASE 03: Live 24h Hackathon */}
+            {/* PHASE 03: Live Hackathon Coding */}
             <div className="flex-1 group relative flex flex-col transition-transform duration-300 hover:-translate-y-1 hover:z-30 z-20">
               <div
                 className="w-full h-full p-[2px] bg-gradient-to-r from-orange-500 via-amber-500 to-red-600 shadow-[0_0_20px_rgba(249,115,22,0.25)] group-hover:shadow-[0_0_35px_rgba(249,115,22,0.5)] transition-all"
                 style={{
-                  clipPath: 'polygon(0% 0%, calc(100% - 30px) 0%, 100% 50%, calc(100% - 30px) 100%, 0% 100%, 30px 50%)',
+                  clipPath: 'polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%, 24px 50%)',
                 }}
               >
                 <div
-                  className="w-full h-full bg-[#0e1222]/95 backdrop-blur-xl p-6 pl-10 pr-11 flex flex-col justify-between space-y-4"
+                  className="w-full h-full bg-[#0e1222]/95 backdrop-blur-xl p-5 pl-8 pr-9 flex flex-col justify-between space-y-3"
                   style={{
-                    clipPath: 'polygon(0% 0%, calc(100% - 30px) 0%, 100% 50%, calc(100% - 30px) 100%, 0% 100%, 30px 50%)',
+                    clipPath: 'polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%, 24px 50%)',
                   }}
                 >
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-400 shadow-inner">
-                        <Zap className="w-5 h-5" />
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="w-9 h-9 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-400 shadow-inner">
+                        <Zap className="w-4 h-4" />
                       </div>
-                      <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/30 px-2.5 py-1 rounded-full">
+                      <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/30 px-2 py-0.5 rounded-full">
                         PHASE 03
                       </span>
                     </div>
 
-                    <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight mb-1">
-                      Live Hackathon Window
+                    <h3 className="text-sm sm:text-base font-extrabold text-white tracking-tight mb-1">
+                      Hackathon Sprint
                     </h3>
-                    <p className="text-xl sm:text-2xl font-black text-orange-400 mb-2 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]">
-                      {config?.hackathonStartDate ? `${formatDate(config.hackathonStartDate)} - ${formatDate(config.hackathonEndDate)}` : 'Sept 25-26, 2026'}
+                    <p className="text-base sm:text-lg font-black text-orange-400 mb-1 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]">
+                      {config?.hackathonStartDate && config?.hackathonEndDate
+                        ? `${formatDate(config.hackathonStartDate)} - ${formatDate(config.hackathonEndDate)}`
+                        : formatDate(config?.hackathonStartDate)}
                     </p>
-                    <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                      Non-stop sprint. Public GitHub repository and live demo URL submission required.
+                    <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                      {config?.durationHours ? `${config.durationHours}-hour` : '48-hour'} coding sprint with live GitHub & demo submission.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* PHASE 04: Winners & Results */}
+            {/* PHASE 04: Technical Interview Phase */}
             <div className="flex-1 group relative flex flex-col transition-transform duration-300 hover:-translate-y-1 hover:z-30 z-20">
               <div
-                className="w-full h-full p-[2px] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 shadow-[0_0_20px_rgba(52,211,153,0.25)] group-hover:shadow-[0_0_35px_rgba(52,211,153,0.5)] transition-all"
+                className="w-full h-full p-[2px] bg-gradient-to-r from-cyan-500 via-sky-400 to-indigo-600 shadow-[0_0_20px_rgba(6,182,212,0.25)] group-hover:shadow-[0_0_35px_rgba(6,182,212,0.5)] transition-all"
                 style={{
-                  clipPath: 'polygon(0% 0%, calc(100% - 30px) 0%, 100% 50%, calc(100% - 30px) 100%, 0% 100%, 30px 50%)',
+                  clipPath: 'polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%, 24px 50%)',
                 }}
               >
                 <div
-                  className="w-full h-full bg-[#091522]/95 backdrop-blur-xl p-6 pl-10 pr-11 flex flex-col justify-between space-y-4"
+                  className="w-full h-full bg-[#081326]/95 backdrop-blur-xl p-5 pl-8 pr-9 flex flex-col justify-between space-y-3"
                   style={{
-                    clipPath: 'polygon(0% 0%, calc(100% - 30px) 0%, 100% 50%, calc(100% - 30px) 100%, 0% 100%, 30px 50%)',
+                    clipPath: 'polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%, 24px 50%)',
                   }}
                 >
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
-                        <Trophy className="w-5 h-5" />
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-inner">
+                        <UserCheck className="w-4 h-4" />
                       </div>
-                      <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+                      <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded-full">
                         PHASE 04
                       </span>
                     </div>
 
-                    <h3 className="text-base sm:text-lg font-extrabold text-white tracking-tight mb-1">
-                      Winners & Results
+                    <h3 className="text-sm sm:text-base font-extrabold text-white tracking-tight mb-1">
+                      Presentation & Discussion (F2F)
                     </h3>
-                    <p className="text-xl sm:text-2xl font-black text-emerald-400 mb-2 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]">
-                      {formatDate(config?.hackathonEndDate, 'Oct 01, 2026')}
+                    <p className="text-base sm:text-lg font-black text-cyan-400 mb-1 drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]">
+                      {config?.interviewStartDate && config?.interviewEndDate
+                        ? `${formatDate(config.interviewStartDate)} - ${formatDate(config.interviewEndDate)}`
+                        : formatDate(config?.interviewStartDate)}
                     </p>
-                    <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                      Official winner declaration, cash prize distribution, and hiring fast-track calls.
+                    <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                      1-on-1 presentation & technical discussion rounds for shortlisted finalists.
                     </p>
                   </div>
+                </div>
+              </div>
+            </div>
 
-                  <div className="pt-2 border-t border-emerald-500/20">
-                    <Link
-                      to="/results"
-                      className="text-xs font-extrabold text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1.5 transition-colors group-hover:translate-x-1 duration-200"
-                    >
-                      <span>View Results Leaderboard</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+            {/* PHASE 05: Final Results & Winner Announcement */}
+            <div className="flex-1 group relative flex flex-col transition-transform duration-300 hover:-translate-y-1 hover:z-30 z-20">
+              <div
+                className="w-full h-full p-[2px] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 shadow-[0_0_20px_rgba(52,211,153,0.25)] group-hover:shadow-[0_0_35px_rgba(52,211,153,0.5)] transition-all"
+                style={{
+                  clipPath: 'polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%, 24px 50%)',
+                }}
+              >
+                <div
+                  className="w-full h-full bg-[#091522]/95 backdrop-blur-xl p-5 pl-8 pr-9 flex flex-col justify-between space-y-3"
+                  style={{
+                    clipPath: 'polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%, 24px 50%)',
+                  }}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
+                        <Trophy className="w-4 h-4" />
+                      </div>
+                      <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                        PHASE 05
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm sm:text-base font-extrabold text-white tracking-tight mb-1">
+                      Final Winners & Offers
+                    </h3>
+                    <p className="text-base sm:text-lg font-black text-emerald-400 mb-1 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]">
+                      {formatDate(config?.hackathonResultDate || config?.interviewEndDate)}
+                    </p>
+                    <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                      Official winner declaration, cash prize distribution, and job offer calls.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -377,7 +409,7 @@ export const LandingPage = () => {
               <h4 className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider mb-2">
                 1st Runner Up
               </h4>
-              <div className="text-3xl sm:text-4xl font-extrabold text-white mb-4">₹15,000</div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-white mb-4">₹35,000</div>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Fast-Track Interview Process
                 <br />
@@ -397,7 +429,7 @@ export const LandingPage = () => {
               <h4 className="text-xs sm:text-sm font-bold text-orange-400 uppercase tracking-wider mb-2">
                 Winner Overall
               </h4>
-              <div className="text-4xl sm:text-5xl font-extrabold text-white mb-4">₹30,000</div>
+              <div className="text-4xl sm:text-5xl font-extrabold text-white mb-4">₹55,000</div>
               <p className="text-xs text-slate-300 leading-relaxed">
                 Direct Job Offer / Engineering Placement
                 <br />
@@ -412,7 +444,7 @@ export const LandingPage = () => {
               <h4 className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider mb-2">
                 2nd Runner Up
               </h4>
-              <div className="text-3xl sm:text-4xl font-extrabold text-white mb-4">₹10,000</div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-white mb-4">₹25,000</div>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Priority Hiring Review
                 <br />

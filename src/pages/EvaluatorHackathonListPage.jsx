@@ -86,7 +86,6 @@ export const EvaluatorHackathonListPage = () => {
                   <th className="px-4 py-3">Submission ID</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">GitHub Repo</th>
-                  <th className="px-4 py-3">Project Score</th>
                   <th className="px-4 py-3">Submitted At</th>
                   <th className="px-4 py-3 text-right">Action</th>
                 </tr>
@@ -117,19 +116,6 @@ export const EvaluatorHackathonListPage = () => {
                       ) : (
                         <span className="text-slate-500 font-mono">No link</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      {(() => {
-                        const scoreVal = sub.averageScore ?? sub.aggregatedScore ?? sub.score ?? sub.totalScore;
-                        return scoreVal != null ? (
-                          <span className="inline-flex items-center gap-1 font-mono text-xs text-amber-300 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded font-bold">
-                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                            {Number(scoreVal).toFixed(1)} / 100
-                          </span>
-                        ) : (
-                          <span className="text-[11px] font-mono text-slate-500 italic">Not Rated</span>
-                        );
-                      })()}
                     </td>
                     <td className="px-4 py-3.5 font-mono text-slate-400">
                       {sub.submittedAt || sub.submissionTime ? new Date(sub.submittedAt || sub.submissionTime).toLocaleString() : 'Recorded'}

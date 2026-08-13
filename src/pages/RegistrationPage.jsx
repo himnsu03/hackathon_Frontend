@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../services/authApi';
 import { candidateApi } from '../services/candidateApi';
@@ -10,7 +10,7 @@ import { Select } from '../components/common/Select';
 import { Button } from '../components/common/Button';
 import { User, Mail, Phone, Lock, GraduationCap, Building2, Briefcase, CheckCircle2, ShieldAlert, X, Plus, Upload, FileText } from 'lucide-react';
 
-const POPULAR_TECH_STACKS = ['React', 'Node.js', 'Python', 'Java', 'TypeScript', 'Go', 'Docker', 'AWS', 'Flutter', 'TailwindCSS'];
+const DEFAULT_POPULAR_STACKS = ['React', 'Node.js', 'Python', 'Java', 'TypeScript', 'Go', 'Docker', 'AWS', 'Flutter', 'TailwindCSS'];
 
 export const RegistrationPage = () => {
   const navigate = useNavigate();
@@ -18,7 +18,32 @@ export const RegistrationPage = () => {
   const toast = useToast();
 
   const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 7 }, (_, i) => String(currentYear - 1 + i));
+  const [popularTechStacks, setPopularTechStacks] = useState(DEFAULT_POPULAR_STACKS);
+  const [yearOptions, setYearOptions] = useState(['2025', '2026']);
+
+  useEffect(() => {
+    fetch('/api/public/tech-stacks')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPopularTechStacks(data);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/public/hackathon-config')
+      .then(res => res.json())
+      .then(config => {
+        if (config?.eligiblePassingYears) {
+          const parsedYears = config.eligiblePassingYears.split(',').map(y => y.trim()).filter(Boolean);
+          if (parsedYears.length > 0) {
+            setYearOptions(parsedYears);
+            setFormData(prev => ({ ...prev, gradYear: parsedYears[0] }));
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -27,7 +52,7 @@ export const RegistrationPage = () => {
     password: '',
     confirmPassword: '',
     phone: '',
-    gradYear: String(currentYear + 1),
+    gradYear: '2026',
     college: '',
     experience: '0-1 yrs',
     agreeRules: false,
@@ -293,7 +318,7 @@ export const RegistrationPage = () => {
 
                 <div className="flex flex-wrap gap-1.5">
                   <span className="text-[11px] text-slate-500 font-medium py-0.5">Quick add:</span>
-                  {POPULAR_TECH_STACKS.map((t) => (
+                  {popularTechStacks.map((t) => (
                     <button
                       type="button"
                       key={t}
