@@ -37,8 +37,19 @@ export const CandidateDashboardPage = () => {
   const [copied, setCopied] = useState(false);
   const [expandedRule, setExpandedRule] = useState(null);
 
-  // Resume Upload State
-  const [resumeInfo, setResumeInfo] = useState(null);
+  // Resume Upload State initialized from user session or API
+  const [resumeInfo, setResumeInfo] = useState(() => {
+    if (user?.resume && user.resume.url) return user.resume;
+    if (user?.resumeUrl) {
+      return {
+        fileName: user.resumeFileName || 'Resume.pdf',
+        url: user.resumeUrl,
+        uploadedAt: user.resumeUpdatedAt,
+        createdAt: user.resumeUpdatedAt,
+      };
+    }
+    return null;
+  });
   const [uploadingResume, setUploadingResume] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isReplacingResume, setIsReplacingResume] = useState(false);
@@ -69,12 +80,46 @@ export const CandidateDashboardPage = () => {
         if (data.status === 'fulfilled' && data.value) {
           const dash = data.value;
           setDashboardData(dash);
-          if (dash?.user?.resume) {
-            setResumeInfo(dash.user.resume);
+
+          // Extract resume info from dashboard payload
+          const resObj = dash?.user?.resume || (dash?.user?.resumeUrl ? {
+            fileName: dash.user.resumeFileName || 'Resume.pdf',
+            url: dash.user.resumeUrl,
+            uploadedAt: dash.user.resumeUpdatedAt,
+            createdAt: dash.user.resumeUpdatedAt,
+          } : null);
+
+          if (resObj && resObj.url) {
+            setResumeInfo(resObj);
+            if (user) {
+              updateUser({
+                resumeUrl: resObj.url,
+                resumeFileName: resObj.fileName,
+                resumeUpdatedAt: resObj.uploadedAt || resObj.createdAt,
+                resume: resObj,
+              });
+            }
           } else {
             const localResume = await candidateApi.getResumeInfo();
-            if (localResume) setResumeInfo(localResume);
+            if (localResume && (localResume.url || localResume.resumeUrl)) {
+              const formattedLocal = {
+                fileName: localResume.fileName || localResume.resumeFileName || 'Resume.pdf',
+                url: localResume.url || localResume.resumeUrl,
+                uploadedAt: localResume.uploadedAt || localResume.createdAt || localResume.resumeUpdatedAt,
+                createdAt: localResume.createdAt || localResume.resumeUpdatedAt,
+              };
+              setResumeInfo(formattedLocal);
+              if (user) {
+                updateUser({
+                  resumeUrl: formattedLocal.url,
+                  resumeFileName: formattedLocal.fileName,
+                  resumeUpdatedAt: formattedLocal.uploadedAt,
+                  resume: formattedLocal,
+                });
+              }
+            }
           }
+
           const effectiveStatus = dash.synopsisStatus || dash.user?.synopsisStatus || user?.synopsisStatus;
           if (effectiveStatus && user) {
             updateUser({ synopsisStatus: effectiveStatus, submissionId: dash.user?.submissionId || user.submissionId });
@@ -341,19 +386,31 @@ export const CandidateDashboardPage = () => {
                     <div className="min-w-0 flex-1">
                       <h5 className="text-xs font-bold text-slate-100 truncate">{resumeInfo.fileName || 'Resume.pdf'}</h5>
                       <span className="text-[10px] text-slate-400 font-mono block">
-                        Uploaded: {resumeInfo.uploadedAt ? new Date(resumeInfo.uploadedAt).toLocaleDateString() : 'Active'}
+                        Uploaded: {resumeInfo.uploadedAt || resumeInfo.createdAt ? new Date(resumeInfo.uploadedAt || resumeInfo.createdAt).toLocaleDateString() : 'Active'}
                       </span>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    fullWidth
-                    icon={RefreshCw}
-                    onClick={() => setIsReplacingResume(true)}
-                  >
-                    Replace Resume
-                  </Button>
+                  <div className="flex items-center gap-2 pt-1">
+                    {resumeInfo.url && (
+                      <a
+                        href={resumeInfo.url.startsWith('http') ? resumeInfo.url : resumeInfo.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 rounded-lg text-xs font-bold transition-colors"
+                      >
+                        <FileText className="w-3.5 h-3.5" /> View Resume
+                      </a>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      icon={RefreshCw}
+                      onClick={() => setIsReplacingResume(true)}
+                    >
+                      Replace
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <form
@@ -367,6 +424,14 @@ export const CandidateDashboardPage = () => {
                     try {
                       const res = await candidateApi.uploadResume(selectedFile);
                       setResumeInfo(res);
+                      if (user) {
+                        updateUser({
+                          resumeUrl: res.url,
+                          resumeFileName: res.fileName,
+                          resumeUpdatedAt: res.createdAt || res.uploadedAt,
+                          resume: res,
+                        });
+                      }
                       setIsReplacingResume(false);
                       setSelectedFile(null);
                       toast.success(res?.message || 'Resume uploaded successfully!');

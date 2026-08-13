@@ -8,6 +8,7 @@ import { AdminEvaluatorsPage } from './AdminEvaluatorsPage';
 import { AdminProblemStatementsPage } from './AdminProblemStatementsPage';
 import { AdminSynopsisAiCriteriaPage } from './AdminSynopsisAiCriteriaPage';
 import { AdminHackathonAiCriteriaPage } from './AdminHackathonAiCriteriaPage';
+import { AdminInterviewAiCriteriaPage } from './AdminInterviewAiCriteriaPage';
 
 import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
@@ -365,6 +366,16 @@ export const AdminPanelPage = () => {
             >
               Hackathon Criteria
             </button>
+            <button
+              onClick={() => setActiveTab('interview-ai-criteria')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'interview-ai-criteria'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Interview Criteria
+            </button>
           </div>
         </div>
       </div>
@@ -379,6 +390,8 @@ export const AdminPanelPage = () => {
         <AdminSynopsisAiCriteriaPage />
       ) : activeTab === 'hackathon-ai-criteria' ? (
         <AdminHackathonAiCriteriaPage />
+      ) : activeTab === 'interview-ai-criteria' ? (
+        <AdminInterviewAiCriteriaPage />
       ) : activeTab === 'synopses' ? (
 
         /* Tab 1: Synopsis Proposals Review */

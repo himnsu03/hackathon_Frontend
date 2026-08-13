@@ -99,6 +99,7 @@ export const EvaluatorSynopsisListPage = () => {
               <thead className="bg-slate-900/90 text-slate-400 font-mono uppercase tracking-wider text-[10px] border-b border-slate-800">
                 <tr>
                   <th className="px-4 py-3">Candidate Name</th>
+                  <th className="px-4 py-3">Candidate Email</th>
                   <th className="px-4 py-3">Submission ID</th>
                   <th className="px-4 py-3">Problem Statement</th>
                   <th className="px-4 py-3">Status</th>
@@ -114,6 +115,7 @@ export const EvaluatorSynopsisListPage = () => {
                     className="hover:bg-slate-900/60 transition-colors cursor-pointer group"
                   >
                     <td className="px-4 py-3.5 font-bold text-slate-100">{s.candidateName || s.fullName || 'Candidate'}</td>
+                    <td className="px-4 py-3.5 font-mono text-slate-300">{s.candidateEmail || s.email || 'N/A'}</td>
                     <td className="px-4 py-3.5 font-mono text-orange-400 font-bold">{s.submissionId || 'N/A'}</td>
                     <td className="px-4 py-3.5 text-slate-300">{s.problemStatementTitle || s.problemStatementRef || 'General Track'}</td>
                     <td className="px-4 py-3.5">

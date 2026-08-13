@@ -160,7 +160,7 @@ export const EvaluatorSynopsisDetailPage = () => {
       {/* Main Synopsis Proposal Card */}
       <Card
         title={`Candidate Synopsis Review: ${synopsis?.candidateName || 'Candidate'}`}
-        subtitle={`Submission ID: ${synopsis?.submissionId || 'N/A'}`}
+        subtitle={`Candidate Email: ${synopsis?.candidateEmail || synopsis?.email || 'N/A'} • Submission ID: ${synopsis?.submissionId || 'N/A'}`}
         headerAction={<Badge status={synopsis?.status || 'PENDING'} />}
       >
         <div className="space-y-6">

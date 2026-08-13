@@ -16,7 +16,7 @@ export const candidateApi = {
     const data = dashboardRes.status === 'fulfilled' ? dashboardRes.value : {};
     const hackathonData = hackathonStatusRes.status === 'fulfilled' ? hackathonStatusRes.value : {};
     const resultsList = resultsRes.status === 'fulfilled' ? (Array.isArray(resultsRes.value) ? resultsRes.value : resultsRes.value?.results || []) : [];
-    const resumeData = resumeRes.status === 'fulfilled' ? resumeRes.value.data : null;
+    const resumeData = resumeRes.status === 'fulfilled' ? (resumeRes.value?.data || resumeRes.value) : null;
 
     const userObj = data.user || {};
     const synopsisObj = data.synopsis || {};
@@ -75,12 +75,16 @@ export const candidateApi = {
 
     return {
       user: {
+        ...userObj,
         fullName: userObj.name || userObj.fullName,
         email: userObj.email,
         submissionId: userObj.submissionId || null,
         synopsisStatus,
         synopsisSubmittedAt: synopsisObj.submittedAt || null,
-        resume: resumeData || data.resume || null,
+        resume: resumeData || data.resume || (userObj.resumeUrl ? { fileName: userObj.resumeFileName || 'Resume.pdf', url: userObj.resumeUrl, uploadedAt: userObj.resumeUpdatedAt } : null),
+        resumeUrl: userObj.resumeUrl,
+        resumeFileName: userObj.resumeFileName,
+        resumeUpdatedAt: userObj.resumeUpdatedAt,
       },
       synopsisStatus,
       eligibleToStart: Boolean(data.eligibleToStart),

@@ -115,4 +115,46 @@ export const evaluatorApi = {
     const response = await httpClient.post(`/api/evaluator/synopsis/${id}/reject`);
     return response.data;
   },
+
+  // ─── F2F Interview Evaluation Endpoints ───────────────────────────────
+
+  /**
+   * POST /api/evaluator/interview-evaluations/:submissionId
+   */
+  async evaluateInterviewSubmission(submissionId, evaluationData) {
+    const response = await httpClient.post(`/api/evaluator/interview-evaluations/${submissionId}`, evaluationData);
+    return response.data;
+  },
+
+  /**
+   * GET /api/evaluator/interview-evaluations/:submissionId/my
+   */
+  async getMyInterviewEvaluation(submissionId) {
+    try {
+      const response = await httpClient.get(`/api/evaluator/interview-evaluations/${submissionId}/my`);
+      return response.data;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * GET /api/evaluator/interview-evaluations/:submissionId
+   */
+  async getInterviewEvaluationsForSubmission(submissionId) {
+    const response = await httpClient.get(`/api/evaluator/interview-evaluations/${submissionId}`);
+    return response.data || [];
+  },
+
+  /**
+   * GET /api/evaluator/candidates/:userId/resume
+   */
+  async getCandidateResume(userId) {
+    try {
+      const response = await httpClient.get(`/api/evaluator/candidates/${userId}/resume`);
+      return response.data;
+    } catch {
+      return null;
+    }
+  },
 };

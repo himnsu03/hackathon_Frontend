@@ -315,7 +315,8 @@ export const MainHackathonPage = () => {
     Boolean(statusData?.assignmentStartTime);
 
   const isSubmitted = statusData?.status === 'SUBMITTED';
-  const isLocked = statusData?.status === 'LOCKED' || statusData?.locked;
+  const isShortlisted = statusData?.status === 'SHORTLISTED' || user?.hackathonStatus === 'SHORTLISTED';
+  const isLocked = statusData?.status === 'LOCKED' || statusData?.locked || isShortlisted;
   const startTimeDisplay = statusData?.assignmentStartTime
     ? new Date(statusData.assignmentStartTime).toLocaleString()
     : null;

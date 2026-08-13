@@ -30,6 +30,21 @@ export const Badge = ({ status = 'NOT_SUBMITTED', className = '' }) => {
       styles: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
       icon: AlertCircle,
     },
+    INTERVIEW_COMPLETED: {
+      label: 'Interview Completed',
+      styles: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+      icon: CheckCircle2,
+    },
+    INTERVIEWED: {
+      label: 'Interview Completed',
+      styles: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+      icon: CheckCircle2,
+    },
+    INTERVIEW_PENDING: {
+      label: 'Interview Pending',
+      styles: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+      icon: Clock,
+    },
   };
 
   const config = configs[normalized] || configs.NOT_SUBMITTED;

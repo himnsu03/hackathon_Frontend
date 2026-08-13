@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Code2, LayoutDashboard, FileText, Trophy, ShieldCheck, LogOut, Terminal } from 'lucide-react';
+import { Code2, LayoutDashboard, FileText, Trophy, ShieldCheck, LogOut, Terminal, UserCheck } from 'lucide-react';
 import { Button } from './common/Button';
 
 export const Navbar = () => {
@@ -32,6 +32,7 @@ export const Navbar = () => {
     { label: 'Hackathon', path: '/hackathon', icon: Terminal, role: 'candidate', badge: user?.synopsisStatus === 'SHORTLISTED' ? 'Live' : null },
     { label: 'Synopsis Reviews', path: '/evaluator/synopsis', icon: FileText, role: 'evaluator' },
     { label: 'Hackathon Reviews', path: '/evaluator/hackathon', icon: Terminal, role: 'evaluator' },
+    { label: 'F2F Interview', path: '/evaluator/interview', icon: UserCheck, role: 'evaluator' },
     { label: 'Admin Panel', path: '/admin', icon: ShieldCheck, role: 'admin' },
     { label: 'Results', path: '/results', icon: Trophy, role: 'public' },
   ];

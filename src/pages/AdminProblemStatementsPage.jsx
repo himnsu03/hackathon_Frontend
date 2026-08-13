@@ -244,7 +244,7 @@ export const AdminProblemStatementsPage = ({ embedded = false }) => {
               />
 
               <TextArea
-                label="Key Technical Requirements"
+                label="Key Technical Requirements (One per line)"
                 rows={3}
                 value={form.requirements}
                 onChange={(e) => setForm({ ...form, requirements: e.target.value })}
@@ -252,7 +252,15 @@ export const AdminProblemStatementsPage = ({ embedded = false }) => {
               />
 
               <TextArea
-                label="Real-World Use Cases & Applications"
+                label="Expected Deliverables & Artifacts (One per line)"
+                rows={3}
+                value={form.deliverables}
+                onChange={(e) => setForm({ ...form, deliverables: e.target.value })}
+                placeholder="e.g. GitHub Repository Source Code with README.md&#10;Live Deployed Web Application URL&#10;Technical Architecture Diagram & API Spec"
+              />
+
+              <TextArea
+                label="Real-World Use Cases & Applications (One per line)"
                 rows={3}
                 value={form.useCases}
                 onChange={(e) => setForm({ ...form, useCases: e.target.value })}

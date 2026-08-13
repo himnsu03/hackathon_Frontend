@@ -81,7 +81,9 @@ export const SynopsisSubmissionPage = () => {
     }
   }, [selectedProblemId]);
 
-  const selectedProblem = problemStatements.find((p) => p.id === selectedProblemId) || problemStatements[0];
+  const selectedProblem = problemStatements.find(
+    (p) => p.id === selectedProblemId || String(p.dbId) === String(selectedProblemId) || p.title === selectedProblemId
+  ) || problemStatements[0];
 
 
   const status = synopsisData?.status || user?.synopsisStatus || 'NOT_SUBMITTED';
@@ -256,12 +258,17 @@ export const SynopsisSubmissionPage = () => {
                       <span className="text-[10px] font-mono text-orange-400 font-bold uppercase block">{ps.id}</span>
                       <h4 className="text-xs font-bold text-slate-100 mt-0.5">{ps.title}</h4>
                       <span className="text-[10px] text-slate-500 block mb-1 font-mono">{ps.category}</span>
-                      <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{ps.description}</p>
+                      <p className="text-[11px] text-slate-300 leading-relaxed font-sans whitespace-pre-wrap">{ps.description}</p>
 
                       <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-slate-800/60">
                         {ps.requirements?.length > 0 && (
                           <span className="text-[9px] font-mono text-indigo-400 bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-800/40">
                             {ps.requirements.length} Reqs
+                          </span>
+                        )}
+                        {ps.deliverables?.length > 0 && (
+                          <span className="text-[9px] font-mono text-amber-400 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-800/40">
+                            {ps.deliverables.length} Deliverables
                           </span>
                         )}
                         {ps.useCases?.length > 0 && (
@@ -287,11 +294,11 @@ export const SynopsisSubmissionPage = () => {
 
           {/* Full Expanded View of Chosen Problem Statement */}
           {selectedProblem && (
-            <div className="p-5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-4 shadow-inner">
+            <div className="p-5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-5 shadow-inner">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
                 <div>
                   <span className="text-[10px] font-mono text-orange-400 font-bold uppercase tracking-wider block">
-                    Selected Track Full Details: {selectedProblem.id}
+                    Selected Track Full Specification: {selectedProblem.id}
                   </span>
                   <h4 className="text-base font-bold text-slate-100 mt-0.5">{selectedProblem.title}</h4>
                 </div>
@@ -302,16 +309,16 @@ export const SynopsisSubmissionPage = () => {
                 )}
               </div>
 
-              {/* Description */}
-              <div className="space-y-1">
+              {/* Full Description */}
+              <div className="space-y-1.5">
                 <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
-                  Challenge Summary & Overview
+                  Challenge Detailed Overview
                 </span>
-                <p className="text-xs text-slate-300 leading-relaxed font-sans">{selectedProblem.description}</p>
+                <p className="text-xs text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">{selectedProblem.description}</p>
               </div>
 
               {/* Key Technical Requirements List */}
-              <div className="space-y-2 pt-2 border-t border-slate-800/80">
+              <div className="space-y-2 pt-3 border-t border-slate-800/80">
                 <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
                   <ListChecks className="w-4 h-4 text-indigo-400" /> Key Technical Requirements & Guidelines ({selectedProblem.requirements?.length || 0})
                 </span>
@@ -329,8 +336,27 @@ export const SynopsisSubmissionPage = () => {
                 )}
               </div>
 
+              {/* Expected Deliverables List */}
+              <div className="space-y-2 pt-3 border-t border-slate-800/80">
+                <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Package className="w-4 h-4 text-amber-400" /> Expected Deliverables & Artifacts ({selectedProblem.deliverables?.length || 0})
+                </span>
+                {selectedProblem.deliverables && selectedProblem.deliverables.length > 0 ? (
+                  <ul className="space-y-1.5 pl-1">
+                    {selectedProblem.deliverables.map((del, idx) => (
+                      <li key={idx} className="text-xs text-slate-300 flex items-start gap-2 leading-relaxed">
+                        <Package className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                        <span>{del}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-slate-500 italic pl-1">No expected deliverables specified for this track.</p>
+                )}
+              </div>
+
               {/* Real-World Use Cases List */}
-              <div className="space-y-2 pt-2 border-t border-slate-800/80">
+              <div className="space-y-2 pt-3 border-t border-slate-800/80">
                 <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Target className="w-4 h-4 text-emerald-400" /> Real-World Use Cases & Target Applications ({selectedProblem.useCases?.length || 0})
                 </span>

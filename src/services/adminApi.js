@@ -363,6 +363,52 @@ export const adminApi = {
     const res = await httpClient.delete(`/api/admin/hackathon-ai-criteria/${id}`);
     return res.data;
   },
+
+  // ─── Interview F2F Evaluation Criteria ───────────────────────────────
+
+  /**
+   * Get all Interview F2F Evaluation Criteria (admin)
+   */
+  async getAllInterviewAiCriteria(hackathonConfigId = 1) {
+    const res = await httpClient.get('/api/admin/interview-ai-criteria', {
+      params: hackathonConfigId ? { hackathonConfigId } : {},
+    });
+    return res.data;
+  },
+
+  /**
+   * Get public/active Interview F2F Evaluation Criteria
+   */
+  async getPublicInterviewAiCriteria(hackathonConfigId = 1) {
+    const res = await httpClient.get('/api/public/interview-ai-criteria', {
+      params: hackathonConfigId ? { hackathonConfigId } : {},
+    });
+    return res.data;
+  },
+
+  /**
+   * Create an Interview F2F Evaluation Criteria entry (admin)
+   */
+  async createInterviewAiCriteria(data) {
+    const res = await httpClient.post('/api/admin/interview-ai-criteria', data);
+    return res.data;
+  },
+
+  /**
+   * Update an Interview F2F Evaluation Criteria entry (admin)
+   */
+  async updateInterviewAiCriteria(id, data) {
+    const res = await httpClient.put(`/api/admin/interview-ai-criteria/${id}`, data);
+    return res.data;
+  },
+
+  /**
+   * Delete an Interview F2F Evaluation Criteria entry (admin)
+   */
+  async deleteInterviewAiCriteria(id) {
+    const res = await httpClient.delete(`/api/admin/interview-ai-criteria/${id}`);
+    return res.data;
+  },
 };
 
 function mapSynopsisList(list) {

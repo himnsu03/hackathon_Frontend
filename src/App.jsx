@@ -28,6 +28,8 @@ import { EvaluatorSynopsisListPage } from './pages/EvaluatorSynopsisListPage';
 import { EvaluatorSynopsisDetailPage } from './pages/EvaluatorSynopsisDetailPage';
 import { EvaluatorHackathonListPage } from './pages/EvaluatorHackathonListPage';
 import { EvaluatorHackathonDetailPage } from './pages/EvaluatorHackathonDetailPage';
+import { EvaluatorInterviewListPage } from './pages/EvaluatorInterviewListPage';
+import { EvaluatorInterviewDetailPage } from './pages/EvaluatorInterviewDetailPage';
 
 export function App() {
   return (
@@ -155,6 +157,22 @@ export function App() {
                   element={
                     <ProtectedRoute requiredRole="evaluator">
                       <EvaluatorHackathonDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/evaluator/interview"
+                  element={
+                    <ProtectedRoute requiredRole="evaluator">
+                      <EvaluatorInterviewListPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/evaluator/interview/:id"
+                  element={
+                    <ProtectedRoute requiredRole="evaluator">
+                      <EvaluatorInterviewDetailPage />
                     </ProtectedRoute>
                   }
                 />
