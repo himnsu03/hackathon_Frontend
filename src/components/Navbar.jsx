@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Code2, LayoutDashboard, FileText, Trophy, ShieldCheck, LogOut, Terminal, UserCheck } from 'lucide-react';
+import { FileText, Trophy, ShieldCheck, LogOut, Terminal, UserCheck } from 'lucide-react';
 import { Button } from './common/Button';
 
 export const Navbar = () => {
@@ -14,22 +14,18 @@ export const Navbar = () => {
     navigate('/login');
   };
 
-  const isAdmin = user?.role === 'admin';
-  const isEvaluator = user?.role === 'evaluator';
+  const userRole = user?.role ? String(user.role).toLowerCase() : '';
+  const isAdmin = userRole === 'admin';
+  const isEvaluator = userRole === 'evaluator';
 
   const brandHomePath = !isAuthenticated
-    ? '/'
+    ? '/login'
     : isAdmin
     ? '/admin'
-    : isEvaluator
-    ? '/evaluator/synopsis'
-    : '/dashboard';
+    : '/evaluator/synopsis';
 
   // Filter navigation items based on user role & authentication
   const allNavItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, role: 'candidate' },
-    { label: 'Synopsis', path: '/synopsis', icon: FileText, role: 'candidate' },
-    { label: 'Hackathon', path: '/hackathon', icon: Terminal, role: 'candidate', badge: user?.synopsisStatus === 'SHORTLISTED' ? 'Live' : null },
     { label: 'Synopsis Reviews', path: '/evaluator/synopsis', icon: FileText, role: 'evaluator' },
     { label: 'Hackathon Reviews', path: '/evaluator/hackathon', icon: Terminal, role: 'evaluator' },
     { label: 'F2F Interview', path: '/evaluator/interview', icon: UserCheck, role: 'evaluator' },
@@ -42,13 +38,13 @@ export const Navbar = () => {
     if (!isAuthenticated) return false;
     if (isAdmin) return item.role === 'admin' || item.role === 'evaluator';
     if (isEvaluator) return item.role === 'evaluator';
-    return item.role === 'candidate';
+    return false;
   });
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
       <div className="relative w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand Section: Contata Image links to contata.com, XathonPortal links to Home / */}
+        {/* Brand Section: Contata Image links to contata.com, XathonPortal links to Console */}
         <div className="flex items-center gap-3.5 shrink-0 z-10">
           <a
             href="https://www.contata.com/"
@@ -67,7 +63,7 @@ export const Navbar = () => {
           <Link
             to={brandHomePath}
             className="hidden sm:flex flex-col justify-center border-l border-slate-700/80 pl-3.5 py-0.5 group transition-transform hover:scale-[1.02]"
-            title="Go to Portal Home"
+            title="Go to Console Home"
           >
             <span className="font-extrabold text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-orange-200 to-slate-300 leading-tight">
               Xathon<span className="text-orange-500">Portal</span>
@@ -96,11 +92,6 @@ export const Navbar = () => {
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span>{item.label}</span>
-                {item.badge && (
-                  <span className="px-1.5 py-0.5 text-[9px] font-extrabold bg-emerald-500 text-slate-950 rounded-full animate-pulse">
-                    {item.badge}
-                  </span>
-                )}
               </Link>
             );
           })}
@@ -111,23 +102,14 @@ export const Navbar = () => {
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col items-end">
-                <span className="text-xs font-semibold text-slate-200">{user?.fullName}</span>
+                <span className="text-xs font-semibold text-slate-200">{user?.fullName || user?.name || 'Evaluator'}</span>
                 <span className="text-[10px] font-mono text-orange-400">
-                  {isAdmin ? 'ADMINISTRATOR' : (user?.submissionId || user?.email)}
+                  {isAdmin ? 'ADMINISTRATOR' : 'EVALUATOR'}
                 </span>
               </div>
               <Button variant="ghost" size="sm" onClick={handleLogout} icon={LogOut} title="Log out">
                 <span className="hidden sm:inline">Logout</span>
               </Button>
-            </div>
-          ) : location.pathname !== '/' ? (
-            <div className="flex items-center gap-2">
-              <Link to="/login">
-                <Button variant="ghost" size="sm">Login</Button>
-              </Link>
-              <Link to="/register">
-                <Button variant="primary" size="sm">Register</Button>
-              </Link>
             </div>
           ) : null}
         </div>

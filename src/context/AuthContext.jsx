@@ -5,7 +5,14 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem('auth_token'));
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('user_details');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
 
   // Restore session on mount
@@ -16,17 +23,22 @@ export const AuthProvider = ({ children }) => {
         try {
           const res = await authApi.getMe();
           const userData = res.user || null;
-          setUser(userData);
           if (userData) {
+            setUser(userData);
             localStorage.setItem('user_details', JSON.stringify(userData));
           }
-        } catch {
-          // Token invalid or session expired
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('user_details');
-          setToken(null);
-          setUser(null);
+        } catch (err) {
+          // Token invalid or session expired (401 or 403)
+          const status = err?.status || err?.response?.status;
+          if (status === 401 || status === 403) {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_details');
+            setToken(null);
+            setUser(null);
+          }
         }
+      } else {
+        setUser(null);
       }
       setLoading(false);
     };

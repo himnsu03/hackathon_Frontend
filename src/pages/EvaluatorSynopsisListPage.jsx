@@ -37,7 +37,18 @@ export const EvaluatorSynopsisListPage = () => {
   );
 
   const filteredSynopses = synopses.filter((s) => {
-    const matchesStatus = statusFilter === 'ALL' || s.status === statusFilter;
+    const sStatus = (s.status || '').toUpperCase();
+    const isPending = sStatus === 'PENDING' || sStatus === 'SUBMITTED' || sStatus === 'UNDER_REVIEW' || sStatus === 'DRAFT' || sStatus === 'PENDING_REVIEW';
+    
+    let matchesStatus = false;
+    if (statusFilter === 'ALL') {
+      matchesStatus = true;
+    } else if (statusFilter === 'PENDING' || statusFilter === 'PENDING_REVIEW') {
+      matchesStatus = isPending;
+    } else {
+      matchesStatus = sStatus === statusFilter;
+    }
+
     const matchesProblem =
       problemFilter === 'ALL' ||
       s.problemStatementTitle === problemFilter ||
@@ -68,7 +79,7 @@ export const EvaluatorSynopsisListPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1 w-full">
             <Select
               label="Synopsis Status"
-              options={['ALL', 'PENDING_REVIEW', 'SHORTLISTED', 'REJECTED']}
+              options={['ALL', 'PENDING', 'SHORTLISTED', 'REJECTED']}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             />

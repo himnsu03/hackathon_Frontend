@@ -17,26 +17,26 @@ export const adminApi = {
     if (filterStatus === 'ALL') {
       try {
         const [pendingRes, shortlistedRes, rejectedRes] = await Promise.allSettled([
-          AdminSynopsisManagementService.getSubmissions('PENDING', 0, 100),
-          AdminSynopsisManagementService.getSubmissions('SHORTLISTED', 0, 100),
-          AdminSynopsisManagementService.getSubmissions('REJECTED', 0, 100),
+          httpClient.get('/api/admin/synopsis', { params: { status: 'PENDING', page: 0, size: 100 } }),
+          httpClient.get('/api/admin/synopsis', { params: { status: 'SHORTLISTED', page: 0, size: 100 } }),
+          httpClient.get('/api/admin/synopsis', { params: { status: 'REJECTED', page: 0, size: 100 } }),
         ]);
 
         const combined = [];
-        if (pendingRes.status === 'fulfilled') combined.push(...(pendingRes.value.content || []));
-        if (shortlistedRes.status === 'fulfilled') combined.push(...(shortlistedRes.value.content || []));
-        if (rejectedRes.status === 'fulfilled') combined.push(...(rejectedRes.value.content || []));
+        if (pendingRes.status === 'fulfilled') combined.push(...(pendingRes.value.data?.content || []));
+        if (shortlistedRes.status === 'fulfilled') combined.push(...(shortlistedRes.value.data?.content || []));
+        if (rejectedRes.status === 'fulfilled') combined.push(...(rejectedRes.value.data?.content || []));
 
         return { synopses: mapSynopsisList(combined) };
       } catch {
-        const res = await AdminSynopsisManagementService.getSubmissions('PENDING', 0, 100);
-        return { synopses: mapSynopsisList(res.content || []) };
+        const res = await httpClient.get('/api/admin/synopsis', { params: { status: 'PENDING', page: 0, size: 100 } });
+        return { synopses: mapSynopsisList(res.data?.content || []) };
       }
     }
 
     const validStatus = ['PENDING', 'SHORTLISTED', 'REJECTED'].includes(filterStatus) ? filterStatus : 'PENDING';
-    const response = await AdminSynopsisManagementService.getSubmissions(validStatus, 0, 100);
-    const content = response.content || response.items || response || [];
+    const response = await httpClient.get('/api/admin/synopsis', { params: { status: validStatus, page: 0, size: 100 } });
+    const content = response.data?.content || [];
     return { synopses: mapSynopsisList(content) };
   },
 

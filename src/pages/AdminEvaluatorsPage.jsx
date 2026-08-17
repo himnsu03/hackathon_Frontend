@@ -131,7 +131,7 @@ export const AdminEvaluatorsPage = ({ embedded = false }) => {
                     </td>
                     <td className="px-4 py-3.5 font-mono text-slate-300">{ev.email}</td>
                     <td className="px-4 py-3.5">
-                      <Badge status={ev.status === 'ACTIVE' ? 'SHORTLISTED' : 'PENDING'} />
+                      <Badge status={ev.active !== false && ev.status !== 'INACTIVE' ? 'ACTIVE' : 'REJECTED'} />
                     </td>
                     <td className="px-4 py-3.5 font-mono text-slate-400">{ev.createdAt || 'N/A'}</td>
                     <td className="px-4 py-3.5 text-right">

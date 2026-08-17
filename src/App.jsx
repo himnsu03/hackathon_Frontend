@@ -5,14 +5,8 @@ import { AuthProvider } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 
-// Pages
-import { LandingPage } from './pages/LandingPage';
-import { RegistrationPage } from './pages/RegistrationPage';
-import { EmailVerificationPage } from './pages/EmailVerificationPage';
+// Authentication & Results Pages
 import { LoginPage } from './pages/LoginPage';
-import { CandidateDashboardPage } from './pages/CandidateDashboardPage';
-import { SynopsisSubmissionPage } from './pages/SynopsisSubmissionPage';
-import { MainHackathonPage } from './pages/MainHackathonPage';
 import { ResultsPage } from './pages/ResultsPage';
 
 // Admin Pages
@@ -40,39 +34,9 @@ export function App() {
             <Navbar />
             <main className="flex-1">
               <Routes>
-                {/* Landing Page */}
-                <Route path="/" element={<LandingPage />} />
-
-                {/* Public Auth Flow */}
-                <Route path="/register" element={<RegistrationPage />} />
-                <Route path="/verify" element={<EmailVerificationPage />} />
+                {/* Entry & Login Flow */}
+                <Route path="/" element={<LoginPage />} />
                 <Route path="/login" element={<LoginPage />} />
-
-                {/* Candidate Protected Routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <CandidateDashboardPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/synopsis"
-                  element={
-                    <ProtectedRoute>
-                      <SynopsisSubmissionPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/hackathon"
-                  element={
-                    <ProtectedRoute requireShortlist>
-                      <MainHackathonPage />
-                    </ProtectedRoute>
-                  }
-                />
 
                 {/* Public Leaderboard */}
                 <Route path="/results" element={<ResultsPage />} />
@@ -178,7 +142,7 @@ export function App() {
                 />
 
                 {/* Fallback Catch-All */}
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                <Route path="*" element={<Navigate to="/evaluator/synopsis" replace />} />
               </Routes>
             </main>
           </div>

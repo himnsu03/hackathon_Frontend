@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { Card } from '../components/common/Card';
 import { Select } from '../components/common/Select';
 import { Badge } from '../components/common/Badge';
-import { Terminal, Loader2, GitBranch, ExternalLink, ChevronRight, Star, Filter } from 'lucide-react';
+import { Terminal, Loader2, GitBranch, ExternalLink, ChevronRight, Filter } from 'lucide-react';
 
 export const EvaluatorHackathonListPage = () => {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export const EvaluatorHackathonListPage = () => {
     const fetchSubmissions = async () => {
       setLoading(true);
       try {
-        const data = await evaluatorApi.getHackathonSubmissions();
+        const data = await evaluatorApi.getHackathonSubmissions('ALL');
         setSubmissions(data || []);
       } catch (err) {
         toast.error('Failed to load candidate hackathon submissions.');
@@ -32,7 +32,25 @@ export const EvaluatorHackathonListPage = () => {
   }, []);
 
   const filteredSubmissions = submissions.filter((s) => {
-    return statusFilter === 'ALL' || s.status === statusFilter;
+    if (statusFilter === 'ALL') return true;
+    const subStatus = (s.status || '').toUpperCase();
+
+    if (statusFilter === 'SUBMITTED') {
+      return subStatus === 'SUBMITTED' || subStatus === 'LOCKED' || subStatus === 'COMPLETED';
+    }
+    if (statusFilter === 'IN_PROGRESS') {
+      return subStatus === 'IN_PROGRESS' || subStatus === 'STARTED';
+    }
+    if (statusFilter === 'SHORTLISTED') {
+      return subStatus === 'SHORTLISTED';
+    }
+    if (statusFilter === 'REJECTED') {
+      return subStatus === 'REJECTED';
+    }
+    if (statusFilter === 'NOT_STARTED') {
+      return subStatus === 'NOT_STARTED' || !subStatus;
+    }
+    return subStatus === statusFilter.toUpperCase();
   });
 
   return (
@@ -58,7 +76,7 @@ export const EvaluatorHackathonListPage = () => {
           <div className="flex-1 w-full max-w-xs">
             <Select
               label="Submission Status"
-              options={['ALL', 'SUBMITTED', 'IN_PROGRESS', 'SHORTLISTED', 'REJECTED', 'NOT_STARTED']}
+              options={['ALL', 'SUBMITTED', 'SHORTLISTED', 'REJECTED']}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             />

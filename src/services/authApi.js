@@ -1,4 +1,5 @@
 import { AuthenticationService } from '../sdk';
+import { httpClient } from './httpClient';
 
 export const authApi = {
   /**
@@ -35,18 +36,41 @@ export const authApi = {
   },
 
   /**
-   * Password-based login via SDK
+   * Password-based login for evaluators & admins
    */
   async login(email, password) {
-    const payload = {
-      email,
-      password,
-    };
-    const data = await AuthenticationService.login(payload);
+    const res = await httpClient.post('/api/auth/evaluator/login', { email, password });
+    const data = res.data;
 
     if (data.user) {
       data.user.fullName = data.user.fullName || data.user.name;
+      data.user.role = (data.user.role || 'evaluator').toLowerCase();
+    }
+    return data;
+  },
+
+  /**
+   * Candidate-specific login
+   */
+  async loginCandidate(email, password) {
+    const res = await httpClient.post('/api/auth/candidate/login', { email, password });
+    const data = res.data;
+    if (data.user) {
+      data.user.fullName = data.user.fullName || data.user.name;
       data.user.role = (data.user.role || 'candidate').toLowerCase();
+    }
+    return data;
+  },
+
+  /**
+   * Evaluator/Admin-specific login
+   */
+  async loginEvaluator(email, password) {
+    const res = await httpClient.post('/api/auth/evaluator/login', { email, password });
+    const data = res.data;
+    if (data.user) {
+      data.user.fullName = data.user.fullName || data.user.name;
+      data.user.role = (data.user.role || 'evaluator').toLowerCase();
     }
     return data;
   },

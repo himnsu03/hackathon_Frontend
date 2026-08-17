@@ -104,27 +104,12 @@ export const candidateApi = {
   async uploadResume(file) {
     const formData = new FormData();
     formData.append('file', file);
-    try {
-      const response = await httpClient.post('/api/candidate/resume', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response.data;
-    } catch (err) {
-      console.warn('[candidateApi] uploadResume direct multipart failed, trying upload-url:', err.message);
-      const urlRes = await httpClient.post('/api/candidate/resume/upload-url', {
-        fileName: file.name,
-        contentType: file.type,
-      });
-      const { uploadUrl } = urlRes.data;
-      if (uploadUrl) {
-        await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-        const confirmRes = await httpClient.post('/api/candidate/resume/confirm', { fileName: file.name });
-        return confirmRes.data;
-      }
-      throw err;
-    }
+    const response = await httpClient.post('/api/candidate/resume', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
   },
 
   /**

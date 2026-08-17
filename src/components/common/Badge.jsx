@@ -5,9 +5,29 @@ export const Badge = ({ status = 'NOT_SUBMITTED', className = '' }) => {
   const normalized = status.toUpperCase();
 
   const configs = {
+    ACTIVE: {
+      label: 'Active',
+      styles: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+      icon: CheckCircle2,
+    },
     SHORTLISTED: {
       label: 'Shortlisted',
       styles: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+      icon: CheckCircle2,
+    },
+    SUBMITTED: {
+      label: 'Submitted',
+      styles: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+      icon: CheckCircle2,
+    },
+    IN_PROGRESS: {
+      label: 'In Progress',
+      styles: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+      icon: Clock,
+    },
+    LOCKED: {
+      label: 'Submitted',
+      styles: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
       icon: CheckCircle2,
     },
     PENDING: {

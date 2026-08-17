@@ -11,11 +11,19 @@ export const evaluatorApi = {
   },
 
   /**
-   * GET /api/evaluator/synopsis via SDK
+   * GET /api/evaluator/synopsis
    */
-  async getSynopses() {
-    const response = await EvaluatorService.getSynopsesToEvaluate();
-    return response?.content || response?.items || response || [];
+  async getSynopses(status, problemStatementRef) {
+    const params = { page: 0, size: 100 };
+    if (status && status !== 'ALL') {
+      params.status = status === 'PENDING_REVIEW' ? 'PENDING' : status;
+    }
+    if (problemStatementRef && problemStatementRef !== 'ALL') {
+      params.problemStatementRef = problemStatementRef;
+    }
+    const response = await httpClient.get('/api/evaluator/synopsis', { params });
+    const data = response.data;
+    return data?.content || data?.items || data || [];
   },
 
   /**
@@ -46,11 +54,16 @@ export const evaluatorApi = {
   },
 
   /**
-   * GET /api/evaluator/hackathon-submissions via SDK
+   * GET /api/evaluator/hackathon-submissions
    */
   async getHackathonSubmissions(status) {
-    const response = await EvaluatorService.getHackathonSubmissionsToEvaluate();
-    const content = response?.content || response?.items || response || [];
+    const params = { page: 0, size: 100 };
+    if (status && status !== 'ALL') {
+      params.status = status;
+    }
+    const response = await httpClient.get('/api/evaluator/hackathon-submissions', { params });
+    const data = response.data;
+    const content = data?.content || data?.items || data || [];
     if (status && status !== 'ALL') {
       return content.filter((item) => item.status === status);
     }

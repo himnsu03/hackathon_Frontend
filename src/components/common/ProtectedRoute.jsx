@@ -22,37 +22,14 @@ export const ProtectedRoute = ({ children, requireShortlist = false, requireAdmi
 
   const userRole = user?.role?.toLowerCase() || 'candidate';
 
-  // Evaluators must NEVER access /dashboard or candidate-only routes
-  if (userRole === 'evaluator') {
-    if (location.pathname === '/dashboard' || requiredRole === 'candidate') {
-      return <Navigate to="/evaluator/synopsis" replace />;
-    }
-  }
-
-  // Role check if requiredRole specified
-  if (requiredRole) {
-    const req = requiredRole.toLowerCase();
-    if (userRole !== req && userRole !== 'admin') {
-      if (userRole === 'evaluator') return <Navigate to="/evaluator/synopsis" replace />;
-      if (userRole === 'admin') return <Navigate to="/admin" replace />;
-      return <Navigate to="/dashboard" replace />;
-    }
+  // Candidate users cannot access Admin/Evaluator app
+  if (userRole === 'candidate') {
+    return <Navigate to="/login" replace />;
   }
 
   // Redirect non-admin attempting to access admin route
   if (requireAdmin && userRole !== 'admin') {
-    if (userRole === 'evaluator') return <Navigate to="/evaluator/synopsis" replace />;
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // Redirect admin attempting to access candidate-only routes to /admin
-  if (!requireAdmin && !requiredRole && userRole === 'admin') {
-    return <Navigate to="/admin" replace />;
-  }
-
-  // Redirect candidate without Shortlisted status attempting to access /hackathon
-  if (requireShortlist && user?.synopsisStatus !== 'SHORTLISTED') {
-    return <Navigate to="/dashboard" state={{ warning: 'The hackathon environment is only accessible to candidates with Shortlisted synopses.' }} replace />;
+    return <Navigate to="/evaluator/synopsis" replace />;
   }
 
   return children;
