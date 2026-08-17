@@ -22,6 +22,7 @@ export const authApi = {
       graduationYear: data.gradYear ? parseInt(data.gradYear, 10) : (data.graduationYear ? parseInt(data.graduationYear, 10) : 2026),
       collegeOrUniversity: data.college || data.collegeOrUniversity || '',
       experience: expMap[data.experience] || data.experience || 'STUDENT',
+      dateOfBirth: data.dateOfBirth || null,
       agreedToRules: Boolean(data.agreeRules ?? data.agreedToRules ?? true),
     };
 
@@ -36,15 +37,15 @@ export const authApi = {
   },
 
   /**
-   * Password-based login for evaluators & admins
+   * Password-based login for candidates
    */
   async login(email, password) {
-    const res = await httpClient.post('/api/auth/evaluator/login', { email, password });
+    const res = await httpClient.post('/api/auth/candidate/login', { email, password });
     const data = res.data;
 
     if (data.user) {
       data.user.fullName = data.user.fullName || data.user.name;
-      data.user.role = (data.user.role || 'evaluator').toLowerCase();
+      data.user.role = (data.user.role || 'candidate').toLowerCase();
     }
     return data;
   },
@@ -86,5 +87,21 @@ export const authApi = {
       user.role = (user.role || 'candidate').toLowerCase();
     }
     return { user };
+  },
+
+  /**
+   * Request password reset OTP via email
+   */
+  async forgotPassword(email) {
+    const res = await httpClient.post('/api/auth/forgot-password', { email });
+    return res.data;
+  },
+
+  /**
+   * Complete password reset using OTP
+   */
+  async resetPassword(email, otp, newPassword) {
+    const res = await httpClient.post('/api/auth/reset-password', { email, otp, newPassword });
+    return res.data;
   },
 };

@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
-export const ProtectedRoute = ({ children, requireShortlist = false, requireAdmin = false, requiredRole = null }) => {
+export const ProtectedRoute = ({ children, requireShortlist = false }) => {
   const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
 
@@ -20,16 +20,9 @@ export const ProtectedRoute = ({ children, requireShortlist = false, requireAdmi
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const userRole = user?.role?.toLowerCase() || 'candidate';
-
-  // Candidate users cannot access Admin/Evaluator app
-  if (userRole === 'candidate') {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Redirect non-admin attempting to access admin route
-  if (requireAdmin && userRole !== 'admin') {
-    return <Navigate to="/evaluator/synopsis" replace />;
+  // Redirect candidate without Shortlisted status attempting to access hackathon
+  if (requireShortlist && user?.synopsisStatus !== 'SHORTLISTED' && user?.role?.toLowerCase() === 'candidate') {
+    return <Navigate to="/dashboard" state={{ warning: 'The hackathon environment is only accessible to candidates with Shortlisted synopses.' }} replace />;
   }
 
   return children;

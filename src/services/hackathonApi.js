@@ -52,4 +52,18 @@ export const hackathonApi = {
       return [];
     }
   },
+
+  /**
+   * Get public Synopsis AI Evaluation Criteria
+   */
+  async getPublicSynopsisAiCriteria(hackathonConfigId = 1, problemId = null) {
+    try {
+      const res = await httpClient.get('/api/public/synopsis-ai-criteria', {
+        params: { hackathonConfigId, problemId },
+      });
+      return res.data;
+    } catch {
+      return [];
+    }
+  },
 };

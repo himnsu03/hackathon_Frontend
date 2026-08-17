@@ -5,25 +5,13 @@ import { AuthProvider } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 
-// Authentication & Results Pages
+// Candidate Pages
+import { LandingPage } from './pages/LandingPage';
+import { RegistrationPage } from './pages/RegistrationPage';
 import { LoginPage } from './pages/LoginPage';
+import { SynopsisSubmissionPage } from './pages/SynopsisSubmissionPage';
+import { MainHackathonPage } from './pages/MainHackathonPage';
 import { ResultsPage } from './pages/ResultsPage';
-
-// Admin Pages
-import { AdminPanelPage } from './pages/AdminPanelPage';
-import { AdminConfigPage } from './pages/AdminConfigPage';
-import { AdminProblemStatementsPage } from './pages/AdminProblemStatementsPage';
-import { AdminEvaluatorsPage } from './pages/AdminEvaluatorsPage';
-import { AdminSynopsisDetailPage } from './pages/AdminSynopsisDetailPage';
-import { AdminHackathonDetailPage } from './pages/AdminHackathonDetailPage';
-
-// Evaluator Pages
-import { EvaluatorSynopsisListPage } from './pages/EvaluatorSynopsisListPage';
-import { EvaluatorSynopsisDetailPage } from './pages/EvaluatorSynopsisDetailPage';
-import { EvaluatorHackathonListPage } from './pages/EvaluatorHackathonListPage';
-import { EvaluatorHackathonDetailPage } from './pages/EvaluatorHackathonDetailPage';
-import { EvaluatorInterviewListPage } from './pages/EvaluatorInterviewListPage';
-import { EvaluatorInterviewDetailPage } from './pages/EvaluatorInterviewDetailPage';
 
 export function App() {
   return (
@@ -34,115 +22,48 @@ export function App() {
             <Navbar />
             <main className="flex-1">
               <Routes>
-                {/* Entry & Login Flow */}
-                <Route path="/" element={<LoginPage />} />
+                {/* Public Candidate Pages */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/register" element={<RegistrationPage />} />
                 <Route path="/login" element={<LoginPage />} />
-
-                {/* Public Leaderboard */}
                 <Route path="/results" element={<ResultsPage />} />
 
-                {/* Admin Protected Routes */}
+                {/* Candidate Protected Routes */}
                 <Route
-                  path="/admin"
+                  path="/synopsis"
                   element={
-                    <ProtectedRoute requireAdmin>
-                      <AdminPanelPage />
+                    <ProtectedRoute>
+                      <SynopsisSubmissionPage />
                     </ProtectedRoute>
                   }
                 />
                 <Route
-                  path="/admin/config"
+                  path="/synopsis-submission"
                   element={
-                    <ProtectedRoute requireAdmin>
-                      <AdminConfigPage />
+                    <ProtectedRoute>
+                      <SynopsisSubmissionPage />
                     </ProtectedRoute>
                   }
                 />
                 <Route
-                  path="/admin/problem-statements"
+                  path="/hackathon"
                   element={
-                    <ProtectedRoute requireAdmin>
-                      <AdminProblemStatementsPage />
+                    <ProtectedRoute requireShortlist>
+                      <MainHackathonPage />
                     </ProtectedRoute>
                   }
                 />
                 <Route
-                  path="/admin/evaluators"
+                  path="/hackathon-submission"
                   element={
-                    <ProtectedRoute requireAdmin>
-                      <AdminEvaluatorsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/synopsis/:id"
-                  element={
-                    <ProtectedRoute requireAdmin>
-                      <AdminSynopsisDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/hackathon-submissions/:id"
-                  element={
-                    <ProtectedRoute requireAdmin>
-                      <AdminHackathonDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Evaluator Portal Protected Routes */}
-                <Route
-                  path="/evaluator/synopsis"
-                  element={
-                    <ProtectedRoute requiredRole="evaluator">
-                      <EvaluatorSynopsisListPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/evaluator/synopsis/:id"
-                  element={
-                    <ProtectedRoute requiredRole="evaluator">
-                      <EvaluatorSynopsisDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/evaluator/hackathon"
-                  element={
-                    <ProtectedRoute requiredRole="evaluator">
-                      <EvaluatorHackathonListPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/evaluator/hackathon-submissions/:id"
-                  element={
-                    <ProtectedRoute requiredRole="evaluator">
-                      <EvaluatorHackathonDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/evaluator/interview"
-                  element={
-                    <ProtectedRoute requiredRole="evaluator">
-                      <EvaluatorInterviewListPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/evaluator/interview/:id"
-                  element={
-                    <ProtectedRoute requiredRole="evaluator">
-                      <EvaluatorInterviewDetailPage />
+                    <ProtectedRoute requireShortlist>
+                      <MainHackathonPage />
                     </ProtectedRoute>
                   }
                 />
 
                 {/* Fallback Catch-All */}
-                <Route path="*" element={<Navigate to="/evaluator/synopsis" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
           </div>
