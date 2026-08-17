@@ -1,0 +1,192 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { evaluatorApi } from '../services/evaluatorApi';
+import { useToast } from '../context/ToastContext';
+import { Card } from '../components/common/Card';
+import { Select } from '../components/common/Select';
+import { Badge } from '../components/common/Badge';
+import { Terminal, Loader2, GitBranch, ExternalLink, ChevronRight, Filter, FileSpreadsheet } from 'lucide-react';
+import { exportToExcel } from '../utils/excelExport';
+import { Button } from '../components/common/Button';
+
+export const EvaluatorHackathonListPage = () => {
+  const navigate = useNavigate();
+  const toast = useToast();
+
+  const [loading, setLoading] = useState(true);
+  const [submissions, setSubmissions] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      setLoading(true);
+      try {
+        const data = await evaluatorApi.getHackathonSubmissions('ALL');
+        setSubmissions(data || []);
+      } catch (err) {
+        toast.error('Failed to load candidate hackathon submissions.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubmissions();
+  }, []);
+
+  const filteredSubmissions = submissions.filter((s) => {
+    if (statusFilter === 'ALL') return true;
+    const subStatus = (s.status || '').toUpperCase();
+
+    if (statusFilter === 'SUBMITTED') {
+      return subStatus === 'SUBMITTED' || subStatus === 'LOCKED' || subStatus === 'COMPLETED';
+    }
+    if (statusFilter === 'IN_PROGRESS') {
+      return subStatus === 'IN_PROGRESS' || subStatus === 'STARTED';
+    }
+    if (statusFilter === 'SHORTLISTED') {
+      return subStatus === 'SHORTLISTED';
+    }
+    if (statusFilter === 'REJECTED') {
+      return subStatus === 'REJECTED';
+    }
+    if (statusFilter === 'NOT_STARTED') {
+      return subStatus === 'NOT_STARTED' || !subStatus;
+    }
+    return subStatus === statusFilter.toUpperCase();
+  });
+
+  const handleExport = () => {
+    if (filteredSubmissions.length === 0) {
+      toast.warning('No hackathon submission data available to export with current filters.');
+      return;
+    }
+
+    const excelData = filteredSubmissions.map((s, idx) => ({
+      'S.No': idx + 1,
+      'Candidate Name': s.candidateName || s.fullName || s.name || s.user?.name || 'N/A',
+      'Email': s.candidateEmail || s.email || s.userEmail || s.user?.email || 'N/A',
+      'Phone': s.candidatePhone || s.phoneNumber || s.phone || s.user?.phoneNumber || 'N/A',
+      'Submission ID': s.submissionId || s.user?.submissionId || 'N/A',
+      'GitHub Repository': s.githubRepoUrl || 'N/A',
+      'Live App URL': s.liveAppUrl || 'N/A',
+      'Status': s.status || 'SUBMITTED',
+      'Aggregated Score': s.aggregatedScore != null ? s.aggregatedScore : (s.overallScore != null ? s.overallScore : (s.averageScore != null ? s.averageScore : 'N/A')),
+      'Submission Time': (s.submissionTime || s.createdAt) ? new Date(s.submissionTime || s.createdAt).toLocaleString() : 'N/A',
+    }));
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const fileName = `Hackathon_Submissions_${statusFilter}_${dateStr}.xlsx`;
+    exportToExcel(excelData, fileName, 'Hackathon Submissions');
+    toast.success(`Exported ${excelData.length} hackathon project records to Excel!`);
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 flex items-center gap-2">
+            <Terminal className="w-7 h-7 text-emerald-400" /> Evaluator Portal — Hackathon Submissions
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Review final candidate GitHub repositories, live demo deployments, and submit project scores.
+          </p>
+        </div>
+
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={FileSpreadsheet}
+          onClick={handleExport}
+          className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 self-start sm:self-auto font-semibold"
+        >
+          Export Excel ({filteredSubmissions.length})
+        </Button>
+      </div>
+
+      {/* Filter Controls Card */}
+      <Card>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0">
+            <Filter className="w-4 h-4 text-orange-400" /> Filter:
+          </div>
+          <div className="flex-1 w-full max-w-xs">
+            <Select
+              label="Submission Status"
+              options={['ALL', 'SUBMITTED', 'SHORTLISTED', 'REJECTED']}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            />
+          </div>
+        </div>
+      </Card>
+
+      {/* Main Submissions Table */}
+      <Card title="Submitted Coding Projects" subtitle="Click any candidate row to review repository and rate project">
+        {loading ? (
+          <div className="py-12 flex flex-col items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-orange-500 mb-2" />
+            <p className="text-xs text-slate-400">Loading hackathon submissions...</p>
+          </div>
+        ) : filteredSubmissions.length === 0 ? (
+          <div className="py-12 text-center text-slate-400 text-xs">
+            No hackathon project submissions match the selected filter criteria.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="bg-slate-900/90 text-slate-400 font-mono uppercase tracking-wider text-[10px] border-b border-slate-800">
+                <tr>
+                  <th className="px-4 py-3">Candidate Name</th>
+                  <th className="px-4 py-3">Candidate Email</th>
+                  <th className="px-4 py-3">Submission ID</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">GitHub Repo</th>
+                  <th className="px-4 py-3">Submitted At</th>
+                  <th className="px-4 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/80">
+                {filteredSubmissions.map((sub) => (
+                  <tr
+                    key={sub.id}
+                    onClick={() => navigate(`/evaluator/hackathon-submissions/${sub.id}`)}
+                    className="hover:bg-slate-900/60 transition-colors cursor-pointer group"
+                  >
+                    <td className="px-4 py-3.5 font-bold text-slate-100">{sub.candidateName || sub.fullName || 'Candidate'}</td>
+                    <td className="px-4 py-3.5 font-mono text-slate-300">{sub.candidateEmail || sub.email || 'N/A'}</td>
+                    <td className="px-4 py-3.5 font-mono text-orange-400 font-bold">{sub.submissionId || 'N/A'}</td>
+                    <td className="px-4 py-3.5">
+                      <Badge status={sub.status || 'SUBMITTED'} />
+                    </td>
+                    <td className="px-4 py-3.5">
+                      {sub.githubUrl || sub.githubRepoUrl ? (
+                        <a
+                          href={sub.githubUrl || sub.githubRepoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 hover:bg-slate-700 text-orange-400 rounded-lg text-xs font-mono border border-slate-700 transition-colors"
+                        >
+                          <GitBranch className="w-3.5 h-3.5" /> Repository
+                        </a>
+                      ) : (
+                        <span className="text-slate-500 font-mono">No link</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3.5 font-mono text-slate-400">
+                      {sub.submittedAt || sub.submissionTime ? new Date(sub.submittedAt || sub.submissionTime).toLocaleString() : 'Recorded'}
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-orange-400 transition-colors ml-auto" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+};
