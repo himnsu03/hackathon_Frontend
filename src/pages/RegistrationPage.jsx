@@ -53,7 +53,7 @@ export const RegistrationPage = () => {
 
   const now = new Date();
   const regStartDate = hackathonConfig?.synopsisStartDate ? new Date(hackathonConfig.synopsisStartDate) : null;
-  const isRegistrationNotOpenYet = regStartDate && regStartDate > now;
+  const isRegistrationNotOpenYet = !regStartDate || regStartDate > now;
 
   // Form State
   const [formData, setFormData] = useState({
@@ -182,8 +182,8 @@ export const RegistrationPage = () => {
     e.preventDefault();
 
     if (isRegistrationNotOpenYet) {
-      const dateStr = regStartDate ? regStartDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'the scheduled date';
-      toast.warning(`Registration to begin soon! Candidate registration opens on ${dateStr}.`);
+      const dateStr = regStartDate ? `opens on ${regStartDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'has not been announced yet';
+      toast.warning(`Registration to begin soon! Candidate registration ${dateStr}.`);
       return;
     }
 
@@ -218,23 +218,22 @@ export const RegistrationPage = () => {
         // Upload resume if attached during registration
         if (resumeFile) {
           try {
-            await candidateApi.uploadResume(resumeFile);
-            toast.success(`Registration & Resume Upload successful! Welcome, ${formData.fullName.trim()}!`);
-          } catch (uploadErr) {
-            console.error('[Registration Resume Upload Error]', uploadErr);
-            toast.warning('Registration completed, but resume upload failed. You can upload it from your dashboard.');
+            const formDataResume = new FormData();
+            formDataResume.append('file', resumeFile);
+            await candidateApi.uploadResume(formDataResume);
+          } catch (e) {
+            console.error('Failed to auto-upload resume on register:', e);
           }
-        } else {
-          toast.success(`Registration successful! Welcome, ${formData.fullName.trim()}!`);
         }
 
-        navigate('/synopsis', { replace: true });
-      } catch (loginErr) {
-        toast.success('Registration successful! Please log in with your credentials.');
-        navigate('/login', { replace: true });
+        toast.success('Registration successful! Welcome to the Hackathon Dashboard.');
+        navigate('/dashboard');
+      } catch (err) {
+        toast.info('Account created successfully! Please log in.');
+        navigate('/login');
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Registration failed. Please try again.';
+      const msg = err.response?.data?.message || 'Registration failed. Please check your input.';
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -260,8 +259,7 @@ export const RegistrationPage = () => {
             <div>
               <p className="text-sm font-bold">Registration to Begin Soon</p>
               <p className="text-xs text-amber-400/90 mt-0.5">
-                Candidate registration for the hackathon has not opened yet. Registration begins on{' '}
-                <strong>{regStartDate ? regStartDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</strong>.
+                Candidate registration for the hackathon has not opened yet. {regStartDate ? `Registration begins on ${regStartDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.` : 'Registration start date has not been announced yet.'}
               </p>
             </div>
           </div>

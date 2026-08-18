@@ -122,7 +122,7 @@ export const LandingPage = () => {
 
   const now = new Date();
   const regStartDate = config?.synopsisStartDate ? new Date(config.synopsisStartDate) : null;
-  const isRegistrationNotOpenYet = regStartDate && regStartDate > now;
+  const isRegistrationNotOpenYet = !regStartDate || regStartDate > now;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100 selection:bg-orange-500 selection:text-white">
@@ -171,8 +171,8 @@ export const LandingPage = () => {
                     size="lg"
                     className="w-full sm:w-auto shadow-lg shadow-amber-600/25 bg-amber-600 hover:bg-amber-500 text-white font-bold"
                     onClick={() => {
-                      const dateStr = regStartDate ? regStartDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'the scheduled date';
-                      toast.info(`Registration to begin soon! Registration opens on ${dateStr}.`);
+                      const dateStr = regStartDate ? `Registration opens on ${regStartDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.` : 'Registration start date has not been announced yet.';
+                      toast.info(`Registration to begin soon! ${dateStr}`);
                     }}
                   >
                     Registration to Begin Soon <Clock className="w-4 h-4 ml-1.5 inline" />
