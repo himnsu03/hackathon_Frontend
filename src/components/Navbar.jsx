@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FileText, Trophy, LogOut, Terminal, Home } from 'lucide-react';
+import { FileText, Trophy, LogOut, Terminal, Home, LogIn, UserPlus } from 'lucide-react';
 import { Button } from './common/Button';
 
 export const Navbar = () => {
@@ -15,6 +15,7 @@ export const Navbar = () => {
   };
 
   const brandHomePath = '/';
+  const isAuthPage = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register';
 
   // Candidate navigation items
   const allNavItems = [
@@ -100,13 +101,30 @@ export const Navbar = () => {
                 <span className="hidden sm:inline">Logout</span>
               </Button>
             </div>
-          ) : (
-            <Link to="/login">
-              <Button variant="primary" size="sm" className="bg-orange-600 hover:bg-orange-500 text-white font-bold">
-                Login
-              </Button>
-            </Link>
-          )}
+          ) : isAuthPage ? (
+            <div className="flex items-center gap-2">
+              <Link to="/login">
+                <Button
+                  variant={location.pathname === '/login' ? 'primary' : 'ghost'}
+                  size="sm"
+                  icon={LogIn}
+                  className={location.pathname === '/login' ? 'bg-orange-600 hover:bg-orange-500 text-white font-bold' : 'text-slate-300 hover:text-white font-semibold'}
+                >
+                  Login
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button
+                  variant={location.pathname === '/register' ? 'primary' : 'outline'}
+                  size="sm"
+                  icon={UserPlus}
+                  className={location.pathname === '/register' ? 'bg-orange-600 hover:bg-orange-500 text-white font-bold' : 'border-orange-500/50 text-orange-400 hover:bg-orange-950/40 font-semibold'}
+                >
+                  Register
+                </Button>
+              </Link>
+            </div>
+          ) : null}
         </div>
       </div>
     </header>
