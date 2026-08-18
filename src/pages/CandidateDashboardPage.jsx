@@ -498,29 +498,52 @@ export const CandidateDashboardPage = () => {
           {/* Rules Accordion */}
           <Card title="Rules & Guidelines" subtitle="Important policies every candidate must follow">
             <div className="space-y-3">
-              {(dashboardData?.rules || []).map((rule, idx) => {
-                const isOpen = expandedRule === idx;
-                return (
-                  <div
-                    key={idx}
-                    className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/40 transition-colors"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setExpandedRule(isOpen ? null : idx)}
-                      className="w-full p-3.5 text-left flex items-center justify-between text-xs font-semibold text-slate-200 hover:text-orange-300"
+              {(() => {
+                const defaultRules = [
+                  {
+                    title: 'Originality & Code Integrity',
+                    content: 'All synopsis proposals and project code submissions must be original work developed for the hackathon sprint. Pre-existing projects or plagiarized code will result in immediate disqualification.',
+                  },
+                  {
+                    title: 'Synopsis Submission Requirements',
+                    content: 'Synopsis proposals must outline your technical solution architecture, tech stack selection, database design, and key algorithms. Proposals must contain at least 200 characters.',
+                  },
+                  {
+                    title: 'Repository & Live Demo Submission',
+                    content: 'Candidates shortlisted for the main hackathon round must submit a public GitHub repository link and a working live application demo URL before the scheduled deadline.',
+                  },
+                  {
+                    title: 'Code of Conduct & Professional Ethics',
+                    content: 'All participants are expected to maintain professional conduct, respect judging decisions, and follow organizer instructions throughout all phases of the hackathon.',
+                  },
+                ];
+
+                const rulesList = (dashboardData?.rules && dashboardData.rules.length > 0) ? dashboardData.rules : defaultRules;
+
+                return rulesList.map((rule, idx) => {
+                  const isOpen = expandedRule === idx;
+                  return (
+                    <div
+                      key={idx}
+                      className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/40 transition-colors"
                     >
-                      <span>{rule.title}</span>
-                      {isOpen ? <ChevronUp className="w-4 h-4 text-orange-400" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
-                    </button>
-                    {isOpen && (
-                      <div className="px-3.5 pb-3.5 text-xs text-slate-400 leading-relaxed border-t border-slate-800/60 pt-2">
-                        {rule.content}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      <button
+                        type="button"
+                        onClick={() => setExpandedRule(isOpen ? null : idx)}
+                        className="w-full p-3.5 text-left flex items-center justify-between text-xs font-semibold text-slate-200 hover:text-orange-300"
+                      >
+                        <span>{rule.title}</span>
+                        {isOpen ? <ChevronUp className="w-4 h-4 text-orange-400" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                      </button>
+                      {isOpen && (
+                        <div className="px-3.5 pb-3.5 text-xs text-slate-400 leading-relaxed border-t border-slate-800/60 pt-2">
+                          {rule.content}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </Card>
 

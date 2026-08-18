@@ -70,9 +70,28 @@ export const MainHackathonPage = () => {
   const [showProblemModal, setShowProblemModal] = useState(false);
   const [synopsisInfo, setSynopsisInfo] = useState(null);
 
-  // Form State
-  const [githubUrl, setGithubUrl] = useState('');
-  const [liveAppUrl, setLiveAppUrl] = useState('');
+  // Form State initialized with localStorage fallback so links display immediately
+  const [githubUrl, setGithubUrl] = useState(() => {
+    try {
+      const savedUser = JSON.parse(localStorage.getItem('user_details') || '{}');
+      const userId = savedUser?.id;
+      if (userId) {
+        return localStorage.getItem(`hackathon_github_${userId}`) || '';
+      }
+    } catch (e) {}
+    return '';
+  });
+
+  const [liveAppUrl, setLiveAppUrl] = useState(() => {
+    try {
+      const savedUser = JSON.parse(localStorage.getItem('user_details') || '{}');
+      const userId = savedUser?.id;
+      if (userId) {
+        return localStorage.getItem(`hackathon_live_${userId}`) || '';
+      }
+    } catch (e) {}
+    return '';
+  });
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -137,8 +156,16 @@ export const MainHackathonPage = () => {
           setTimeRemaining(diff);
         }
 
-        if (statusRes.githubRepoUrl) setGithubUrl(statusRes.githubRepoUrl);
-        if (statusRes.liveAppUrl) setLiveAppUrl(statusRes.liveAppUrl);
+        const ghUrl = statusRes.githubRepoUrl || statusRes.githubUrl || statusRes.github_repo_url;
+        const appUrl = statusRes.liveAppUrl || statusRes.live_app_url;
+        if (ghUrl) {
+          setGithubUrl(ghUrl);
+          if (currentUserId) localStorage.setItem(`hackathon_github_${currentUserId}`, ghUrl);
+        }
+        if (appUrl) {
+          setLiveAppUrl(appUrl);
+          if (currentUserId) localStorage.setItem(`hackathon_live_${currentUserId}`, appUrl);
+        }
       }
 
       // Hackathon AI Criteria from Admin table
@@ -315,7 +342,22 @@ export const MainHackathonPage = () => {
       });
 
       toast.success('Project submission recorded successfully!');
-      setStatusData(res);
+      const submittedGh = githubUrl.trim();
+      const submittedApp = liveAppUrl.trim();
+      const currentUserId = user?.id || JSON.parse(localStorage.getItem('user_details') || '{}')?.id;
+      if (currentUserId) {
+        localStorage.setItem(`hackathon_github_${currentUserId}`, submittedGh);
+        localStorage.setItem(`hackathon_live_${currentUserId}`, submittedApp);
+      }
+
+      setStatusData((prev) => ({
+        ...(prev || {}),
+        ...(res || {}),
+        status: 'SUBMITTED',
+        githubRepoUrl: submittedGh,
+        liveAppUrl: submittedApp,
+        submissionTime: res?.submissionTime || new Date().toISOString(),
+      }));
     } catch (err) {
       // Surface the exact backend message — backend gives detailed reasons
       // (deadline passed, not started, locked, etc.)
@@ -324,11 +366,15 @@ export const MainHackathonPage = () => {
         || err.message;
 
       if (err.response?.status === 422) {
-        toast.error(`Submission rejected: ${backendMsg || 'The submission deadline has passed or the timer is locked.'}`);
+        toast.error(backendMsg || 'The submission deadline has passed or the timer is locked.');
       } else if (err.response?.status === 400) {
-        toast.error(`Cannot submit: ${backendMsg || 'Hackathon timer has not been started yet. Click "Start Hackathon Timer" first.'}`);
+        toast.error(backendMsg || 'Hackathon timer has not been started yet. Click "Start Hackathon Timer" first.');
       } else if (err.response?.status === 403) {
-        toast.error('Access denied: Your synopsis must be shortlisted to submit hackathon work.');
+        if (backendMsg && (backendMsg.toLowerCase().includes('shortlisted') || backendMsg.toLowerCase().includes('modified'))) {
+          toast.info('🎉 Your hackathon submission has been shortlisted and locked by evaluators. No further edits are allowed.');
+        } else {
+          toast.error(backendMsg || 'Access denied: Your synopsis must be shortlisted to submit hackathon work.');
+        }
       } else {
         toast.error(backendMsg || 'Failed to submit project. Please try again.');
       }
@@ -352,7 +398,7 @@ export const MainHackathonPage = () => {
     statusData?.status === 'LOCKED' ||
     Boolean(statusData?.assignmentStartTime);
 
-  const isSubmitted = statusData?.status === 'SUBMITTED';
+  const isSubmitted = statusData?.status === 'SUBMITTED' || Boolean(statusData?.submissionTime) || Boolean(statusData?.githubRepoUrl || statusData?.githubUrl);
   const isShortlisted = statusData?.status === 'SHORTLISTED' || user?.hackathonStatus === 'SHORTLISTED';
   const isLocked = statusData?.status === 'LOCKED' || statusData?.locked || isShortlisted;
   const startTimeDisplay = statusData?.assignmentStartTime
@@ -569,12 +615,64 @@ export const MainHackathonPage = () => {
           ) : null
         }
       >
+        {/* If already submitted, display a prominent Recorded Submission Banner */}
+        {(isSubmitted || Boolean(githubUrl || statusData?.githubRepoUrl)) && (
+          <div className="mb-6 p-4 bg-slate-950/80 border border-emerald-500/30 rounded-xl space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Recorded Hackathon Submission
+              </span>
+              {statusData?.submissionTime && (
+                <span className="text-[10px] font-mono text-slate-400">
+                  Recorded: {new Date(statusData.submissionTime).toLocaleString()}
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg space-y-1">
+                <span className="text-[10px] font-mono text-slate-400 uppercase block">GitHub Repository Link</span>
+                {(githubUrl || statusData?.githubRepoUrl) ? (
+                  <a
+                    href={githubUrl || statusData?.githubRepoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono font-bold text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1.5 break-all"
+                  >
+                    <GitBranch className="w-3.5 h-3.5 shrink-0 text-orange-400" />
+                    <span>{githubUrl || statusData?.githubRepoUrl}</span>
+                  </a>
+                ) : (
+                  <span className="text-slate-500 italic font-mono">No repository URL</span>
+                )}
+              </div>
+
+              <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg space-y-1">
+                <span className="text-[10px] font-mono text-slate-400 uppercase block">Live Application Demo</span>
+                {(liveAppUrl || statusData?.liveAppUrl) ? (
+                  <a
+                    href={liveAppUrl || statusData?.liveAppUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5 break-all"
+                  >
+                    <Globe className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                    <span>{liveAppUrl || statusData?.liveAppUrl}</span>
+                  </a>
+                ) : (
+                  <span className="text-slate-500 italic font-mono">No live app URL provided</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmitProject} className="space-y-6">
           <Input
             label="GitHub Repository URL"
             placeholder="https://github.com/username/repository"
             icon={GitBranch}
-            value={githubUrl}
+            value={githubUrl || statusData?.githubRepoUrl || statusData?.githubUrl || ''}
             onChange={(e) => setGithubUrl(e.target.value)}
             error={errors.githubUrl}
             disabled={isLocked || !isTimerStarted}
@@ -585,7 +683,7 @@ export const MainHackathonPage = () => {
             label="Live App / Demo URL (Optional)"
             placeholder="https://your-app.vercel.app"
             icon={Globe}
-            value={liveAppUrl}
+            value={liveAppUrl || statusData?.liveAppUrl || ''}
             onChange={(e) => setLiveAppUrl(e.target.value)}
             error={errors.liveAppUrl}
             disabled={isLocked || !isTimerStarted}
