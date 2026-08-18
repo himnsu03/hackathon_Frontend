@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FileText, Trophy, LogOut, Terminal, Home, LogIn, UserPlus } from 'lucide-react';
+import { FileText, Trophy, LogOut, Terminal, Home, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
 import { Button } from './common/Button';
 
 export const Navbar = () => {
@@ -14,12 +14,13 @@ export const Navbar = () => {
     navigate('/login');
   };
 
-  const brandHomePath = '/';
+  const brandHomePath = isAuthenticated ? '/dashboard' : '/';
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   // Candidate navigation items
   const allNavItems = [
     { label: 'Home', path: '/', icon: Home, role: 'public' },
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, role: 'candidate' },
     { label: 'Synopsis', path: '/synopsis', icon: FileText, role: 'candidate' },
     { label: 'Hackathon', path: '/hackathon', icon: Terminal, role: 'candidate' },
     { label: 'Results', path: '/results', icon: Trophy, role: 'public' },

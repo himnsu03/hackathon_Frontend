@@ -9,6 +9,7 @@ import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { LandingPage } from './pages/LandingPage';
 import { RegistrationPage } from './pages/RegistrationPage';
 import { LoginPage } from './pages/LoginPage';
+import { CandidateDashboardPage } from './pages/CandidateDashboardPage';
 import { SynopsisSubmissionPage } from './pages/SynopsisSubmissionPage';
 import { MainHackathonPage } from './pages/MainHackathonPage';
 import { ResultsPage } from './pages/ResultsPage';
@@ -29,6 +30,14 @@ export function App() {
                 <Route path="/results" element={<ResultsPage />} />
 
                 {/* Candidate Protected Routes */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <CandidateDashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/synopsis"
                   element={
