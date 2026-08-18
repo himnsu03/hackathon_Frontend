@@ -547,15 +547,7 @@ export const CandidateDashboardPage = () => {
             </div>
           </Card>
 
-          {/* Organizer Note */}
-          <div className="p-5 bg-orange-950/30 border border-orange-500/20 rounded-2xl space-y-2">
-            <div className="flex items-center gap-2 text-orange-400 text-xs font-bold uppercase tracking-wider">
-              <ShieldCheck className="w-4 h-4" /> Verified Platform
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              If you have any questions regarding your submission status or experience issues, reach out to the organizing team via <b style={{ color: 'orange' }}>email support</b>.
-            </p>
-          </div>
+
         </div>
       </div>
     </div>

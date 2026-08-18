@@ -6,7 +6,7 @@ export const hackathonApi = {
    * Get hackathon status via SDK
    */
   async getStatus() {
-    return await HackathonCoreService.getHackathonStatus();
+    return await HackathonCoreService.getStatus();
   },
 
   /**
@@ -14,7 +14,7 @@ export const hackathonApi = {
    */
   async getProblemStatement() {
     try {
-      return await HackathonCoreService.getAssignedProblemStatement();
+      return await HackathonCoreService.getProblemStatement();
     } catch {
       return null;
     }

@@ -70,28 +70,9 @@ export const MainHackathonPage = () => {
   const [showProblemModal, setShowProblemModal] = useState(false);
   const [synopsisInfo, setSynopsisInfo] = useState(null);
 
-  // Form State initialized with localStorage fallback so links display immediately
-  const [githubUrl, setGithubUrl] = useState(() => {
-    try {
-      const savedUser = JSON.parse(localStorage.getItem('user_details') || '{}');
-      const userId = savedUser?.id;
-      if (userId) {
-        return localStorage.getItem(`hackathon_github_${userId}`) || '';
-      }
-    } catch (e) {}
-    return '';
-  });
-
-  const [liveAppUrl, setLiveAppUrl] = useState(() => {
-    try {
-      const savedUser = JSON.parse(localStorage.getItem('user_details') || '{}');
-      const userId = savedUser?.id;
-      if (userId) {
-        return localStorage.getItem(`hackathon_live_${userId}`) || '';
-      }
-    } catch (e) {}
-    return '';
-  });
+  // Form State
+  const [githubUrl, setGithubUrl] = useState('');
+  const [liveAppUrl, setLiveAppUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -158,14 +139,8 @@ export const MainHackathonPage = () => {
 
         const ghUrl = statusRes.githubRepoUrl || statusRes.githubUrl || statusRes.github_repo_url;
         const appUrl = statusRes.liveAppUrl || statusRes.live_app_url;
-        if (ghUrl) {
-          setGithubUrl(ghUrl);
-          if (currentUserId) localStorage.setItem(`hackathon_github_${currentUserId}`, ghUrl);
-        }
-        if (appUrl) {
-          setLiveAppUrl(appUrl);
-          if (currentUserId) localStorage.setItem(`hackathon_live_${currentUserId}`, appUrl);
-        }
+        if (ghUrl) setGithubUrl(ghUrl);
+        if (appUrl) setLiveAppUrl(appUrl);
       }
 
       // Hackathon AI Criteria from Admin table
@@ -259,6 +234,16 @@ export const MainHackathonPage = () => {
     return () => clearInterval(pollInterval);
   }, []);
 
+  // Sync input fields whenever backend statusData updates
+  useEffect(() => {
+    if (statusData?.githubRepoUrl || statusData?.githubUrl || statusData?.github_repo_url) {
+      setGithubUrl(statusData.githubRepoUrl || statusData.githubUrl || statusData.github_repo_url);
+    }
+    if (statusData?.liveAppUrl || statusData?.live_app_url) {
+      setLiveAppUrl(statusData.liveAppUrl || statusData.live_app_url);
+    }
+  }, [statusData]);
+
   const handleStartHackathon = async () => {
     // Check hackathon window
     const now = new Date();
@@ -342,22 +327,7 @@ export const MainHackathonPage = () => {
       });
 
       toast.success('Project submission recorded successfully!');
-      const submittedGh = githubUrl.trim();
-      const submittedApp = liveAppUrl.trim();
-      const currentUserId = user?.id || JSON.parse(localStorage.getItem('user_details') || '{}')?.id;
-      if (currentUserId) {
-        localStorage.setItem(`hackathon_github_${currentUserId}`, submittedGh);
-        localStorage.setItem(`hackathon_live_${currentUserId}`, submittedApp);
-      }
-
-      setStatusData((prev) => ({
-        ...(prev || {}),
-        ...(res || {}),
-        status: 'SUBMITTED',
-        githubRepoUrl: submittedGh,
-        liveAppUrl: submittedApp,
-        submissionTime: res?.submissionTime || new Date().toISOString(),
-      }));
+      setStatusData(res);
     } catch (err) {
       // Surface the exact backend message — backend gives detailed reasons
       // (deadline passed, not started, locked, etc.)
@@ -615,59 +585,17 @@ export const MainHackathonPage = () => {
           ) : null
         }
       >
-        {/* If already submitted, display a prominent Recorded Submission Banner */}
-        {(isSubmitted || Boolean(githubUrl || statusData?.githubRepoUrl)) && (
-          <div className="mb-6 p-4 bg-slate-950/80 border border-emerald-500/30 rounded-xl space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Recorded Hackathon Submission
-              </span>
-              {statusData?.submissionTime && (
-                <span className="text-[10px] font-mono text-slate-400">
-                  Recorded: {new Date(statusData.submissionTime).toLocaleString()}
-                </span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg space-y-1">
-                <span className="text-[10px] font-mono text-slate-400 uppercase block">GitHub Repository Link</span>
-                {(githubUrl || statusData?.githubRepoUrl) ? (
-                  <a
-                    href={githubUrl || statusData?.githubRepoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono font-bold text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-1.5 break-all"
-                  >
-                    <GitBranch className="w-3.5 h-3.5 shrink-0 text-orange-400" />
-                    <span>{githubUrl || statusData?.githubRepoUrl}</span>
-                  </a>
-                ) : (
-                  <span className="text-slate-500 italic font-mono">No repository URL</span>
-                )}
-              </div>
-
-              <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg space-y-1">
-                <span className="text-[10px] font-mono text-slate-400 uppercase block">Live Application Demo</span>
-                {(liveAppUrl || statusData?.liveAppUrl) ? (
-                  <a
-                    href={liveAppUrl || statusData?.liveAppUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5 break-all"
-                  >
-                    <Globe className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
-                    <span>{liveAppUrl || statusData?.liveAppUrl}</span>
-                  </a>
-                ) : (
-                  <span className="text-slate-500 italic font-mono">No live app URL provided</span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
         <form onSubmit={handleSubmitProject} className="space-y-6">
+          {isLocked && (
+            <div className="p-4 bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs flex items-center gap-3">
+              <Lock className="w-5 h-5 text-emerald-400 shrink-0" />
+              <div>
+                <span className="font-bold text-emerald-200 block mb-0.5">Hackathon Submission Shortlisted & Locked</span>
+                <span>Your project submission has been shortlisted by evaluators. Submission links are locked and cannot be edited.</span>
+              </div>
+            </div>
+          )}
+
           <Input
             label="GitHub Repository URL"
             placeholder="https://github.com/username/repository"
