@@ -15,7 +15,7 @@ export const Navbar = () => {
   };
 
   const brandHomePath = '/';
-  const isAuthPage = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   // Candidate navigation items
   const allNavItems = [
