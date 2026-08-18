@@ -8,6 +8,7 @@ import { Card } from '../components/common/Card';
 import { Input } from '../components/common/Input';
 import { Select } from '../components/common/Select';
 import { Button } from '../components/common/Button';
+import { CaptchaChallenge } from '../components/common/CaptchaChallenge';
 import { User, Mail, Phone, Lock, GraduationCap, Building2, Briefcase, CheckCircle2, ShieldAlert, X, Plus, Upload, FileText, Calendar } from 'lucide-react';
 
 const DEFAULT_POPULAR_STACKS = ['React', 'Node.js', 'Python', 'Java', 'TypeScript', 'Go', 'Docker', 'AWS', 'Flutter', 'TailwindCSS'];
@@ -20,6 +21,8 @@ export const RegistrationPage = () => {
   const currentYear = new Date().getFullYear();
   const [popularTechStacks, setPopularTechStacks] = useState(DEFAULT_POPULAR_STACKS);
   const [yearOptions, setYearOptions] = useState(['2025', '2026']);
+
+  const [hackathonConfig, setHackathonConfig] = useState(null);
 
   useEffect(() => {
     fetch('/api/public/tech-stacks')
@@ -34,6 +37,9 @@ export const RegistrationPage = () => {
     fetch('/api/public/hackathon-config')
       .then(res => res.json())
       .then(config => {
+        if (config) {
+          setHackathonConfig(config);
+        }
         if (config?.eligiblePassingYears) {
           const parsedYears = config.eligiblePassingYears.split(',').map(y => y.trim()).filter(Boolean);
           if (parsedYears.length > 0) {
@@ -44,6 +50,10 @@ export const RegistrationPage = () => {
       })
       .catch(() => { });
   }, []);
+
+  const now = new Date();
+  const regStartDate = hackathonConfig?.synopsisStartDate ? new Date(hackathonConfig.synopsisStartDate) : null;
+  const isRegistrationNotOpenYet = regStartDate && regStartDate > now;
 
   // Form State
   const [formData, setFormData] = useState({
@@ -58,6 +68,54 @@ export const RegistrationPage = () => {
     experience: '0-1 yrs',
     agreeRules: false,
   });
+
+  const [allColleges, setAllColleges] = useState([]);
+  const [collegeSuggestions, setCollegeSuggestions] = useState([]);
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+
+  // Pre-load colleges.json into memory on mount for instant client-side autocomplete
+  useEffect(() => {
+    fetch('/colleges.json')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setAllColleges(data);
+        }
+      })
+      .catch(() => { });
+  }, []);
+
+  // Filter colleges instantly on client side & sync with DB API
+  useEffect(() => {
+    const queryStr = formData.college ? formData.college.trim().toLowerCase() : '';
+
+    if (allColleges.length > 0) {
+      const matches = queryStr
+        ? allColleges.filter((c) => c.toLowerCase().includes(queryStr)).slice(0, 50)
+        : allColleges.slice(0, 50);
+      setCollegeSuggestions(matches);
+    }
+
+    if (queryStr.length >= 1) {
+      fetch(`/api/public/colleges?query=${encodeURIComponent(queryStr)}&limit=50`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            setCollegeSuggestions(data);
+          }
+        })
+        .catch(() => { });
+    }
+  }, [formData.college, allColleges]);
+
+  // CAPTCHA State
+  const [captchaInput, setCaptchaInput] = useState('');
+  const [captchaCode, setCaptchaCode] = useState('');
+
+  const handleCaptchaChange = (inputVal, targetCode) => {
+    setCaptchaInput(inputVal);
+    if (targetCode) setCaptchaCode(targetCode);
+  };
 
   const [techStack, setTechStack] = useState(['React', 'Node.js']);
   const [customTag, setCustomTag] = useState('');
@@ -106,6 +164,14 @@ export const RegistrationPage = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
     if (techStack.length === 0) newErrors.techStack = 'Select at least one tech stack tag';
+
+    // CAPTCHA Validation
+    if (!captchaInput.trim()) {
+      newErrors.captcha = 'Please enter the CAPTCHA code shown in the image';
+    } else if (captchaInput.trim().toUpperCase() !== captchaCode.toUpperCase()) {
+      newErrors.captcha = 'Incorrect CAPTCHA code. Please check the code and try again.';
+    }
+
     if (!formData.agreeRules) newErrors.agreeRules = 'You must agree to the Hackathon Rules and Code of Conduct';
 
     setErrors(newErrors);
@@ -114,6 +180,13 @@ export const RegistrationPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isRegistrationNotOpenYet) {
+      const dateStr = regStartDate ? regStartDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'the scheduled date';
+      toast.warning(`Registration to begin soon! Candidate registration opens on ${dateStr}.`);
+      return;
+    }
+
     if (!validate()) return;
 
     setLoading(true);
@@ -173,7 +246,7 @@ export const RegistrationPage = () => {
       {/* Header */}
       <div className="text-center max-w-lg mb-8">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-100 tracking-tight">
-          Join <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">Xthon</span>
+          Join <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">Xathon</span>
         </h1>
         <p className="text-sm text-slate-400 mt-2">
           Enterprise Hackathon Platform — Showcase your software engineering innovation.
@@ -181,6 +254,18 @@ export const RegistrationPage = () => {
       </div>
 
       <Card className="max-w-xl w-full">
+        {isRegistrationNotOpenYet && (
+          <div className="p-4 bg-amber-950/60 border border-amber-500/50 rounded-xl text-amber-300 flex items-start gap-3 mb-6">
+            <Calendar className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold">Registration to Begin Soon</p>
+              <p className="text-xs text-amber-400/90 mt-0.5">
+                Candidate registration for the hackathon has not opened yet. Registration begins on{' '}
+                <strong>{regStartDate ? regStartDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</strong>.
+              </p>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Section 1: Personal Info */}
           <div>
@@ -262,15 +347,44 @@ export const RegistrationPage = () => {
             </h4>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="College / University"
-                  icon={Building2}
-                  placeholder="e.g. Stanford University"
-                  required
-                  value={formData.college}
-                  onChange={(e) => setFormData({ ...formData, college: e.target.value })}
-                  error={errors.college}
-                />
+                <div className="relative">
+                  <Input
+                    label="College / University"
+                    icon={Building2}
+                    placeholder="Type to search college (e.g., KIET, Shri D.V. Raval, IIT, etc.)"
+                    required
+                    autoComplete="off"
+                    value={formData.college}
+                    onChange={(e) => {
+                      setFormData({ ...formData, college: e.target.value });
+                      setShowCollegeDropdown(true);
+                    }}
+                    onFocus={() => setShowCollegeDropdown(true)}
+                    onBlur={() => {
+                      setTimeout(() => setShowCollegeDropdown(false), 200);
+                    }}
+                    error={errors.college}
+                  />
+
+                  {showCollegeDropdown && collegeSuggestions.length > 0 && (
+                    <div className="absolute z-40 left-0 top-full mt-1 w-full sm:min-w-[130%] bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl max-h-64 overflow-y-auto divide-y divide-slate-800/80">
+                      {collegeSuggestions.map((colName) => (
+                        <button
+                          key={colName}
+                          type="button"
+                          className="w-full text-left px-3.5 py-2.5 text-xs text-slate-200 hover:bg-orange-500/20 hover:text-orange-300 transition-colors whitespace-normal break-words leading-snug"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setFormData({ ...formData, college: colName });
+                            setShowCollegeDropdown(false);
+                          }}
+                        >
+                          {colName}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <Select
                   label="Graduation Year"
                   options={yearOptions}
@@ -391,6 +505,12 @@ export const RegistrationPage = () => {
             </div>
           </div>
 
+          {/* Bot Protection CAPTCHA Challenge */}
+          <CaptchaChallenge
+            onCaptchaChange={handleCaptchaChange}
+            error={errors.captcha}
+          />
+
           {/* Code of Conduct Checkbox */}
           <div className="pt-2">
             <label className="flex items-start gap-3 cursor-pointer group">
@@ -415,8 +535,8 @@ export const RegistrationPage = () => {
             {errors.agreeRules && <p className="text-xs text-rose-400 mt-1">• {errors.agreeRules}</p>}
           </div>
 
-          <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
-            Complete Candidate Registration
+          <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} disabled={isRegistrationNotOpenYet}>
+            {isRegistrationNotOpenYet ? 'Registration to Begin Soon' : 'Complete Candidate Registration'}
           </Button>
 
           <p className="text-center text-xs text-slate-400">

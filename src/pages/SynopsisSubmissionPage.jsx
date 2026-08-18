@@ -39,6 +39,9 @@ export const SynopsisSubmissionPage = () => {
 
         const data = await synopsisApi.getStatus();
         setSynopsisData(data);
+        if (data?.status) {
+          updateUser({ synopsisStatus: data.status });
+        }
         if (data.synopsisContent) {
           setContent(data.synopsisContent);
         }

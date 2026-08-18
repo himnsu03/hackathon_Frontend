@@ -8,7 +8,7 @@ export const candidateApi = {
   async getDashboard() {
     const [dashboardRes, hackathonStatusRes, resultsRes, resumeRes] = await Promise.allSettled([
       CandidateDashboardService.getDashboard(),
-      HackathonCoreService.getHackathonStatus(),
+      HackathonCoreService.getStatus(),
       PublicResultsService.getResults(),
       httpClient.get('/api/candidate/resume'),
     ]);
@@ -31,12 +31,7 @@ export const candidateApi = {
     // Real-Time Dynamic Timeline Steps
     const keyDates = [
       {
-        label: 'Candidate Registration & Account Setup',
-        date: 'Account Verified & Active',
-        status: 'completed',
-      },
-      {
-        label: 'Synopsis Proposal Submission',
+        label: 'Candidate Registration',
         date: synopsisObj.submittedAt
           ? `Submitted: ${new Date(synopsisObj.submittedAt).toLocaleString()}`
           : isSynopsisSubmitted
@@ -45,7 +40,7 @@ export const candidateApi = {
         status: isSynopsisSubmitted ? 'completed' : 'active',
       },
       {
-        label: 'Synopsis Proposal Review & Shortlist',
+        label: 'Synopsis Shortlist',
         date: isShortlisted
           ? 'Shortlisted — Qualified for Hackathon'
           : synopsisStatus === 'REJECTED'
@@ -56,7 +51,7 @@ export const candidateApi = {
         status: isShortlisted ? 'completed' : isSynopsisSubmitted ? 'active' : 'upcoming',
       },
       {
-        label: '24-Hour Hackathon Coding Window',
+        label: 'Hackathon Sprint',
         date: hackathonData?.assignmentStartTime
           ? `Started: ${new Date(hackathonData.assignmentStartTime).toLocaleString()}`
           : isShortlisted
@@ -65,7 +60,12 @@ export const candidateApi = {
         status: isProjectSubmitted ? 'completed' : isHackathonStarted ? 'active' : isShortlisted ? 'active' : 'upcoming',
       },
       {
-        label: 'Official Leaderboard & Results Declaration',
+        label: 'Presentation & Discussion',
+        date: '1-on-1 Presentation & Technical Discussion',
+        status: isProjectSubmitted ? 'active' : 'upcoming',
+      },
+      {
+        label: 'Result',
         date: isResultsDeclared
           ? `Results Published Live (${resultsList.length} Winners)`
           : 'Pending Final Project Evaluation',

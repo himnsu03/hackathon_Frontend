@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { hackathonConfigService } from '../services/hackathonConfigService';
 import {
   Calendar,
@@ -107,6 +108,7 @@ const RulesAccordion = () => {
 
 export const LandingPage = () => {
   const { isAuthenticated, user } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
   const [config, setConfig] = useState(null);
 
@@ -117,6 +119,10 @@ export const LandingPage = () => {
     };
     loadConfig();
   }, []);
+
+  const now = new Date();
+  const regStartDate = config?.synopsisStartDate ? new Date(config.synopsisStartDate) : null;
+  const isRegistrationNotOpenYet = regStartDate && regStartDate > now;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100 selection:bg-orange-500 selection:text-white">
@@ -159,11 +165,25 @@ export const LandingPage = () => {
               </>
             ) : (
               <>
-                <Link to="/register">
-                  <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-lg shadow-orange-600/25">
-                    Register Now <ArrowRight className="w-4 h-4 ml-1 inline" />
+                {isRegistrationNotOpenYet ? (
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-full sm:w-auto shadow-lg shadow-amber-600/25 bg-amber-600 hover:bg-amber-500 text-white font-bold"
+                    onClick={() => {
+                      const dateStr = regStartDate ? regStartDate.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'the scheduled date';
+                      toast.info(`Registration to begin soon! Registration opens on ${dateStr}.`);
+                    }}
+                  >
+                    Registration to Begin Soon <Clock className="w-4 h-4 ml-1.5 inline" />
                   </Button>
-                </Link>
+                ) : (
+                  <Link to="/register">
+                    <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-lg shadow-orange-600/25">
+                      Register Now <ArrowRight className="w-4 h-4 ml-1 inline" />
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/login">
                   <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                     Candidate login
@@ -336,7 +356,7 @@ export const LandingPage = () => {
                     </div>
 
                     <h3 className="text-sm sm:text-base font-extrabold text-white tracking-tight mb-1">
-                      Presentation & Discussion (F2F)
+                      Presentation & Discussion
                     </h3>
                     <p className="text-base sm:text-lg font-black text-cyan-400 mb-1 drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]">
                       {config?.interviewStartDate && config?.interviewEndDate

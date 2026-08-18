@@ -120,9 +120,9 @@ export const CandidateDashboardPage = () => {
             }
           }
 
-          const effectiveStatus = dash.synopsisStatus || dash.user?.synopsisStatus || user?.synopsisStatus;
-          if (effectiveStatus && user) {
-            updateUser({ synopsisStatus: effectiveStatus, submissionId: dash.user?.submissionId || user.submissionId });
+          const effectiveStatus = dash.synopsisStatus || dash.user?.synopsisStatus;
+          if (effectiveStatus) {
+            updateUser({ synopsisStatus: effectiveStatus, submissionId: dash.user?.submissionId || user?.submissionId });
           }
         }
       } catch (err) {
@@ -279,7 +279,7 @@ export const CandidateDashboardPage = () => {
           </Card>
 
           {/* Key Dates Timeline */}
-          <Card title="Key Hackathon Timeline" subtitle="Official schedule of events and milestone dates">
+          <Card title="Important Hackathon Timeline & Roadmap" subtitle="Official schedule of events and milestone dates">
             <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
               {(() => {
                 const formatTimelineDate = (iso) => {
@@ -310,31 +310,31 @@ export const CandidateDashboardPage = () => {
                   ? dashboardData.keyDates
                   : [
                     {
-                      label: 'Phase 01: Registration & Synopsis Opens',
+                      label: 'Candidate Registration',
                       date: formatTimelineDate(globalConfig?.synopsisStartDate),
                       status: getStatus(globalConfig?.synopsisStartDate, globalConfig?.synopsisDeadline),
                     },
                     {
-                      label: 'Phase 02: Registration & Synopsis Deadline',
-                      date: formatTimelineDate(globalConfig?.synopsisDeadline),
+                      label: 'Synopsis Shortlist',
+                      date: formatTimelineDate(globalConfig?.synopsisResultDate || globalConfig?.synopsisDeadline),
                       status: getStatus(globalConfig?.synopsisDeadline, globalConfig?.synopsisResultDate),
                     },
                     {
-                      label: 'Phase 03: Live Hackathon Coding Sprint',
+                      label: 'Hackathon Sprint',
                       date: globalConfig?.hackathonStartDate && globalConfig?.hackathonEndDate
                         ? `${formatTimelineDate(globalConfig.hackathonStartDate)} - ${formatTimelineDate(globalConfig.hackathonEndDate)}`
                         : formatTimelineDate(globalConfig?.hackathonStartDate),
                       status: getStatus(globalConfig?.hackathonStartDate, globalConfig?.hackathonEndDate),
                     },
                     {
-                      label: 'Phase 04: Presentation & Discussion (F2F)',
+                      label: 'Presentation & Discussion',
                       date: globalConfig?.interviewStartDate && globalConfig?.interviewEndDate
                         ? `${formatTimelineDate(globalConfig.interviewStartDate)} - ${formatTimelineDate(globalConfig.interviewEndDate)}`
                         : formatTimelineDate(globalConfig?.interviewStartDate),
                       status: getStatus(globalConfig?.interviewStartDate, globalConfig?.interviewEndDate),
                     },
                     {
-                      label: 'Phase 05: Final Winner Results & Job Offers',
+                      label: 'Result',
                       date: formatTimelineDate(globalConfig?.hackathonResultDate || globalConfig?.interviewEndDate),
                       status: getStatus(globalConfig?.hackathonResultDate, null),
                     },
