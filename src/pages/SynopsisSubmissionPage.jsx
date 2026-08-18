@@ -11,7 +11,7 @@ import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { TextArea } from '../components/common/TextArea';
 import { CountdownTimer } from '../components/common/CountdownTimer';
-import { FileText, Send, CheckCircle2, Loader2, ArrowLeft, Lightbulb, Check, RefreshCw, Lock, ListChecks, Package, Target, Award, Sparkles } from 'lucide-react';
+import { FileText, Send, CheckCircle2, Loader2, ArrowLeft, Lightbulb, Check, RefreshCw, Lock, ListChecks, Package, Target, Award, Sparkles, AlertTriangle } from 'lucide-react';
 
 
 export const SynopsisSubmissionPage = () => {
@@ -116,6 +116,13 @@ export const SynopsisSubmissionPage = () => {
       const msg = `The synopsis submission window has closed (deadline was ${closeDate}). No further submissions are accepted.`;
       setError(msg);
       toast.error(msg);
+      return;
+    }
+
+    if (!problemStatements || problemStatements.length === 0) {
+      const msg = 'No problem statement tracks are currently available for selection. Submissions are paused.';
+      setError(msg);
+      toast.warning(msg);
       return;
     }
 
@@ -302,13 +309,15 @@ export const SynopsisSubmissionPage = () => {
                 })}
               </div>
             ) : (
-              <Input
-                label="Problem Statement Title / Track Reference"
-                required
-                value={selectedProblemId}
-                onChange={(e) => setSelectedProblemId(e.target.value)}
-                placeholder="e.g. PS-01 Smart Waste Management System"
-              />
+              <div className="p-4 bg-amber-950/40 border border-amber-500/40 rounded-xl text-amber-300 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold">No Problem Statements Found</p>
+                  <p className="text-xs text-amber-400/90 mt-0.5">
+                    No active problem statement tracks are currently available. Please contact the hackathon organizers or administrator to configure problem statement tracks.
+                  </p>
+                </div>
+              </div>
             )}
           </div>
 
