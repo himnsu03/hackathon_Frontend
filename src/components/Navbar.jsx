@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FileText, Trophy, LogOut, Terminal, Home } from 'lucide-react';
+import { FileText, Trophy, ShieldCheck, LogOut, Terminal, UserCheck } from 'lucide-react';
 import { Button } from './common/Button';
 
 export const Navbar = () => {
@@ -14,26 +14,37 @@ export const Navbar = () => {
     navigate('/login');
   };
 
-  const brandHomePath = '/';
+  const userRole = user?.role ? String(user.role).toLowerCase() : '';
+  const isAdmin = userRole === 'admin';
+  const isEvaluator = userRole === 'evaluator';
 
-  // Candidate navigation items
+  const brandHomePath = !isAuthenticated
+    ? '/login'
+    : isAdmin
+    ? '/admin'
+    : '/evaluator/synopsis';
+
+  // Filter navigation items based on user role & authentication
   const allNavItems = [
-    { label: 'Home', path: '/', icon: Home, role: 'public' },
-    { label: 'Synopsis', path: '/synopsis', icon: FileText, role: 'candidate' },
-    { label: 'Hackathon', path: '/hackathon', icon: Terminal, role: 'candidate' },
+    { label: 'Synopsis Reviews', path: '/evaluator/synopsis', icon: FileText, role: 'evaluator' },
+    { label: 'Hackathon Reviews', path: '/evaluator/hackathon', icon: Terminal, role: 'evaluator' },
+    { label: 'F2F Interview', path: '/evaluator/interview', icon: UserCheck, role: 'evaluator' },
+    { label: 'Admin Panel', path: '/admin', icon: ShieldCheck, role: 'admin' },
     { label: 'Results', path: '/results', icon: Trophy, role: 'public' },
   ];
 
   const visibleNavItems = allNavItems.filter((item) => {
     if (item.role === 'public') return true;
     if (!isAuthenticated) return false;
-    return true;
+    if (isAdmin) return item.role === 'admin' || item.role === 'evaluator';
+    if (isEvaluator) return item.role === 'evaluator';
+    return false;
   });
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
       <div className="relative w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand Section */}
+        {/* Brand Section: Contata Image links to contata.com, XathonPortal links to Console */}
         <div className="flex items-center gap-3.5 shrink-0 z-10">
           <a
             href="https://www.contata.com/"
@@ -52,18 +63,18 @@ export const Navbar = () => {
           <Link
             to={brandHomePath}
             className="hidden sm:flex flex-col justify-center border-l border-slate-700/80 pl-3.5 py-0.5 group transition-transform hover:scale-[1.02]"
-            title="Go to Home"
+            title="Go to Console Home"
           >
             <span className="font-extrabold text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-orange-200 to-slate-300 leading-tight">
               Xathon<span className="text-orange-500">Portal</span>
             </span>
             <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase leading-tight mt-0.5 group-hover:text-slate-200 transition-colors">
-              Contata Hackathon 2026
+              {isAdmin ? 'Admin Console' : 'Contata Hackathon 2026'}
             </span>
           </Link>
         </div>
 
-        {/* Nav Links */}
+        {/* Nav Links - Absolutely Centered */}
         <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1.5 rounded-xl border border-slate-800/60 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10">
           {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
@@ -91,22 +102,16 @@ export const Navbar = () => {
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col items-end">
-                <span className="text-xs font-semibold text-slate-200">{user?.fullName || user?.name || 'Candidate'}</span>
+                <span className="text-xs font-semibold text-slate-200">{user?.fullName || user?.name || 'Evaluator'}</span>
                 <span className="text-[10px] font-mono text-orange-400">
-                  {user?.submissionId || user?.email}
+                  {isAdmin ? 'ADMINISTRATOR' : 'EVALUATOR'}
                 </span>
               </div>
               <Button variant="ghost" size="sm" onClick={handleLogout} icon={LogOut} title="Log out">
                 <span className="hidden sm:inline">Logout</span>
               </Button>
             </div>
-          ) : (
-            <Link to="/login">
-              <Button variant="primary" size="sm" className="bg-orange-600 hover:bg-orange-500 text-white font-bold">
-                Login
-              </Button>
-            </Link>
-          )}
+          ) : null}
         </div>
       </div>
     </header>
