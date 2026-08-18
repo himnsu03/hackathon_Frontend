@@ -19,7 +19,6 @@ export const Navbar = () => {
 
   // Candidate navigation items
   const allNavItems = [
-    { label: 'Home', path: '/', icon: Home, role: 'public' },
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, role: 'candidate' },
     { label: 'Synopsis', path: '/synopsis', icon: FileText, role: 'candidate' },
     { label: 'Hackathon', path: '/hackathon', icon: Terminal, role: 'candidate' },
