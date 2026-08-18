@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FileText, Trophy, LogOut, Terminal, Home, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
+import { FileText, Trophy, LogOut, Terminal, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
 import { Button } from './common/Button';
 
 export const Navbar = () => {
