@@ -84,8 +84,8 @@ export const RegistrationPage = () => {
     if (!formData.fullName.trim()) newErrors.fullName = 'Full Name is required';
     if (!formData.email.trim()) {
       newErrors.email = 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email.trim())) {
+      newErrors.email = 'Please enter a valid email address (e.g. user@example.com)';
     }
 
     const cleanPhone = formData.phone.trim().replace(/^(\+91|91)/, '').replace(/\D/g, '');

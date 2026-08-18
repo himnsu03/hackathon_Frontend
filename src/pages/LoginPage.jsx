@@ -31,7 +31,7 @@ export const LoginPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim())) {
       setError('Please enter a valid email address.');
       return;
     }
@@ -61,7 +61,7 @@ export const LoginPage = () => {
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!resetEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail)) {
+    if (!resetEmail || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(resetEmail.trim())) {
       setResetError('Please enter a valid email address.');
       return;
     }
