@@ -139,7 +139,11 @@ export const RegistrationPage = () => {
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.fullName.trim()) newErrors.fullName = 'Full Name is required';
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Full Name is required';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.fullName.trim())) {
+      newErrors.fullName = 'Name should only contain alphabets and spaces (no numbers or special characters)';
+    }
     if (!formData.email.trim()) {
       newErrors.email = 'Email address is required';
     } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email.trim())) {
@@ -233,8 +237,12 @@ export const RegistrationPage = () => {
         navigate('/login');
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Registration failed. Please check your input.';
+      console.error('[Registration Error]', err);
+      const msg = err.body?.message || err.response?.data?.message || err.message || 'Registration failed. Please check your input.';
       toast.error(msg);
+      if (err.status === 409 || err.body?.status === 409 || (typeof msg === 'string' && msg.toLowerCase().includes('email already registered'))) {
+        setErrors((prev) => ({ ...prev, email: msg }));
+      }
     } finally {
       setLoading(false);
     }
@@ -278,7 +286,15 @@ export const RegistrationPage = () => {
                   placeholder="e.g. Alex Vance"
                   required
                   value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({ ...formData, fullName: val });
+                    if (val && !/^[a-zA-Z\s]*$/.test(val)) {
+                      setErrors((prev) => ({ ...prev, fullName: 'Name should only contain alphabets and spaces (no numbers or special characters)' }));
+                    } else if (errors.fullName) {
+                      setErrors((prev) => ({ ...prev, fullName: '' }));
+                    }
+                  }}
                   error={errors.fullName}
                 />
                 <Input
