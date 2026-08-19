@@ -13,6 +13,72 @@ import { User, Mail, Phone, Lock, GraduationCap, Building2, Briefcase, CheckCirc
 
 const DEFAULT_POPULAR_STACKS = ['React', 'Node.js', 'Python', 'Java', 'TypeScript', 'Go', 'Docker', 'AWS', 'Flutter', 'TailwindCSS'];
 
+const SKILL_ALIASES = {
+  react: 'React',
+  reactjs: 'React',
+  'react.js': 'React',
+  'react js': 'React',
+  node: 'Node.js',
+  nodejs: 'Node.js',
+  'node.js': 'Node.js',
+  'node js': 'Node.js',
+  next: 'Next.js',
+  nextjs: 'Next.js',
+  'next.js': 'Next.js',
+  'next js': 'Next.js',
+  vue: 'Vue.js',
+  vuejs: 'Vue.js',
+  'vue.js': 'Vue.js',
+  'vue js': 'Vue.js',
+  angular: 'Angular',
+  angularjs: 'Angular',
+  typescript: 'TypeScript',
+  ts: 'TypeScript',
+  javascript: 'JavaScript',
+  js: 'JavaScript',
+  tailwind: 'TailwindCSS',
+  tailwindcss: 'TailwindCSS',
+  'tailwind css': 'TailwindCSS',
+  docker: 'Docker',
+  aws: 'AWS',
+  python: 'Python',
+  py: 'Python',
+  java: 'Java',
+  spring: 'Spring Boot',
+  springboot: 'Spring Boot',
+  'spring boot': 'Spring Boot',
+  kubernetes: 'Kubernetes',
+  k8s: 'Kubernetes',
+  postgres: 'PostgreSQL',
+  postgresql: 'PostgreSQL',
+  mongodb: 'MongoDB',
+  mongo: 'MongoDB',
+  redis: 'Redis',
+  graphql: 'GraphQL',
+  flutter: 'Flutter',
+  kotlin: 'Kotlin',
+  golang: 'Go',
+  go: 'Go',
+  rust: 'Rust',
+  html: 'HTML5',
+  html5: 'HTML5',
+  css: 'CSS3',
+  css3: 'CSS3',
+  git: 'Git',
+  github: 'GitHub',
+};
+
+const normalizeSkill = (s) => {
+  if (!s) return '';
+  const trimmed = s.trim();
+  const lower = trimmed.toLowerCase();
+  if (SKILL_ALIASES[lower]) return SKILL_ALIASES[lower];
+  if (trimmed === lower && trimmed.length > 0) {
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  }
+  return trimmed;
+};
+
 export const RegistrationPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -26,25 +92,37 @@ export const RegistrationPage = () => {
 
   useEffect(() => {
     fetch('/api/public/tech-stacks')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          setPopularTechStacks(data);
+          const uniqueNormalized = [];
+          const seen = new Set();
+          data.forEach((item) => {
+            const norm = normalizeSkill(item);
+            const key = norm.toLowerCase();
+            if (norm && !seen.has(key)) {
+              seen.add(key);
+              uniqueNormalized.push(norm);
+            }
+          });
+          if (uniqueNormalized.length > 0) {
+            setPopularTechStacks(uniqueNormalized);
+          }
         }
       })
       .catch(() => { });
 
     fetch('/api/public/hackathon-config')
-      .then(res => res.json())
-      .then(config => {
+      .then((res) => res.json())
+      .then((config) => {
         if (config) {
           setHackathonConfig(config);
         }
         if (config?.eligiblePassingYears) {
-          const parsedYears = config.eligiblePassingYears.split(',').map(y => y.trim()).filter(Boolean);
+          const parsedYears = config.eligiblePassingYears.split(',').map((y) => y.trim()).filter(Boolean);
           if (parsedYears.length > 0) {
             setYearOptions(parsedYears);
-            setFormData(prev => ({ ...prev, gradYear: parsedYears[0] }));
+            setFormData((prev) => ({ ...prev, gradYear: parsedYears[0] }));
           }
         }
       })
@@ -126,15 +204,38 @@ export const RegistrationPage = () => {
   const [showRulesModal, setShowRulesModal] = useState(false);
 
   const handleAddTag = (tag) => {
-    const trimmed = tag.trim();
-    if (trimmed && !techStack.includes(trimmed)) {
-      setTechStack([...techStack, trimmed]);
+    if (!tag || !tag.trim()) return;
+    const normalized = normalizeSkill(tag);
+    const alreadyExists = techStack.some((t) => t.toLowerCase() === normalized.toLowerCase());
+    if (!alreadyExists) {
+      setTechStack([...techStack, normalized]);
+      setCustomTag('');
+      if (errors.techStack) setErrors((prev) => ({ ...prev, techStack: '' }));
+    } else {
       setCustomTag('');
     }
   };
 
   const handleRemoveTag = (tagToRemove) => {
-    setTechStack(techStack.filter(t => t !== tagToRemove));
+    setTechStack(techStack.filter((t) => t.toLowerCase() !== tagToRemove.toLowerCase()));
+  };
+
+  const maxDobDate = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().split('T')[0];
+  })();
+
+  const cleanIndianPhone = (raw) => {
+    if (!raw) return '';
+    let digits = raw.trim().replace(/\D/g, '');
+    if (digits.length === 11 && digits.startsWith('0')) {
+      digits = digits.substring(1);
+    }
+    if (digits.length === 12 && digits.startsWith('91')) {
+      digits = digits.substring(2);
+    }
+    return digits;
   };
 
   const validate = () => {
@@ -150,15 +251,36 @@ export const RegistrationPage = () => {
       newErrors.email = 'Please enter a valid email address (e.g. user@example.com)';
     }
 
-    const cleanPhone = formData.phone.trim().replace(/^(\+91|91)/, '').replace(/\D/g, '');
+    const cleanPhone = cleanIndianPhone(formData.phone);
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (cleanPhone.length !== 10) {
-      newErrors.phone = 'Please enter a valid 10-digit mobile number (e.g. 9876543210)';
+      newErrors.phone = 'Mobile number is required';
+    } else if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      newErrors.phone = 'Please enter a valid mobile number';
     }
 
     if (!formData.college.trim()) newErrors.college = 'College/University name is required';
-    if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Date of birth is required';
+
+    if (!formData.dateOfBirth) {
+      newErrors.dateOfBirth = 'Date of birth is required';
+    } else {
+      const dob = new Date(formData.dateOfBirth);
+      const today = new Date();
+      if (isNaN(dob.getTime())) {
+        newErrors.dateOfBirth = 'Please enter a valid date of birth';
+      } else if (dob > today) {
+        newErrors.dateOfBirth = 'Date of birth cannot be in the future';
+      } else {
+        let age = today.getFullYear() - dob.getFullYear();
+        const monthDiff = today.getMonth() - dob.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+          age--;
+        }
+        if (age < 18) {
+          newErrors.dateOfBirth = 'Minimum age requirement is 18 years to register';
+        }
+      }
+    }
+
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
@@ -195,7 +317,7 @@ export const RegistrationPage = () => {
 
     setLoading(true);
     try {
-      const cleanPhone = formData.phone.trim().replace(/^(\+91|91)/, '').replace(/\D/g, '');
+      const cleanPhone = cleanIndianPhone(formData.phone);
       const res = await authApi.register({
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
@@ -260,7 +382,11 @@ export const RegistrationPage = () => {
         </p>
       </div>
 
-      <Card className="max-w-xl w-full">
+      <Card
+        title="Registration Form"
+        subtitle="Fill in your details below to register and participate in the hackathon"
+        className="max-w-xl w-full"
+      >
         {isRegistrationNotOpenYet && (
           <div className="p-4 bg-amber-950/60 border border-amber-500/50 rounded-xl text-amber-300 flex items-start gap-3 mb-6">
             <Calendar className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
@@ -302,8 +428,34 @@ export const RegistrationPage = () => {
                   type="date"
                   icon={Calendar}
                   required
+                  max={maxDobDate}
                   value={formData.dateOfBirth}
-                  onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({ ...formData, dateOfBirth: val });
+                    if (!val) {
+                      setErrors((prev) => ({ ...prev, dateOfBirth: 'Date of birth is required' }));
+                    } else {
+                      const dob = new Date(val);
+                      const today = new Date();
+                      if (isNaN(dob.getTime())) {
+                        setErrors((prev) => ({ ...prev, dateOfBirth: 'Please enter a valid date of birth' }));
+                      } else if (dob > today) {
+                        setErrors((prev) => ({ ...prev, dateOfBirth: 'Date of birth cannot be in the future' }));
+                      } else {
+                        let age = today.getFullYear() - dob.getFullYear();
+                        const monthDiff = today.getMonth() - dob.getMonth();
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                          age--;
+                        }
+                        if (age < 18) {
+                          setErrors((prev) => ({ ...prev, dateOfBirth: 'Minimum age requirement is 18 years to register' }));
+                        } else if (errors.dateOfBirth) {
+                          setErrors((prev) => ({ ...prev, dateOfBirth: '' }));
+                        }
+                      }
+                    }
+                  }}
                   error={errors.dateOfBirth}
                 />
               </div>
@@ -320,12 +472,24 @@ export const RegistrationPage = () => {
                   error={errors.email}
                 />
                 <Input
-                  label="Phone Number"
+                  label="Mobile Number"
                   icon={Phone}
-                  placeholder="10-digit mobile number"
+                  placeholder="e.g. 9876543210"
                   required
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({ ...formData, phone: val });
+                    const clean = cleanIndianPhone(val);
+                    if (val && !/^[6-9]\d{9}$/.test(clean)) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        phone: 'Please enter a valid mobile number',
+                      }));
+                    } else if (errors.phone) {
+                      setErrors((prev) => ({ ...prev, phone: '' }));
+                    }
+                  }}
                   error={errors.phone}
                 />
               </div>
@@ -365,7 +529,7 @@ export const RegistrationPage = () => {
                   <Input
                     label="College / University"
                     icon={Building2}
-                    placeholder="Type to search college (e.g., KIET, Shri D.V. Raval, IIT, etc.)"
+                    placeholder="Type to search college"
                     required
                     autoComplete="off"
                     value={formData.college}
@@ -460,16 +624,23 @@ export const RegistrationPage = () => {
 
                 <div className="flex flex-wrap gap-1.5">
                   <span className="text-[11px] text-slate-500 font-medium py-0.5">Quick add:</span>
-                  {popularTechStacks.map((t) => (
-                    <button
-                      type="button"
-                      key={t}
-                      onClick={() => handleAddTag(t)}
-                      className="text-[11px] px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-400 hover:text-orange-300 border border-slate-700/50 hover:border-orange-500/50"
-                    >
-                      +{t}
-                    </button>
-                  ))}
+                  {popularTechStacks.map((t) => {
+                    const isAdded = techStack.some((s) => s.toLowerCase() === t.toLowerCase());
+                    return (
+                      <button
+                        type="button"
+                        key={t}
+                        onClick={() => handleAddTag(t)}
+                        disabled={isAdded}
+                        className={`text-[11px] px-2 py-0.5 rounded-md border transition-colors ${isAdded
+                          ? 'bg-orange-500/20 text-orange-400 border-orange-500/40 cursor-default'
+                          : 'bg-slate-800/80 text-slate-400 hover:text-orange-300 border-slate-700/50 hover:border-orange-500/50'
+                          }`}
+                      >
+                        {isAdded ? `✓ ${t}` : `+${t}`}
+                      </button>
+                    );
+                  })}
                 </div>
                 {errors.techStack && <p className="text-xs text-rose-400 mt-1">• {errors.techStack}</p>}
               </div>
