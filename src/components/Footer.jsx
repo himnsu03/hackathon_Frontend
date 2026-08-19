@@ -67,7 +67,7 @@ export const Footer = () => {
           </div>
 
           {/* Brand & Copyright Row (Placed Below) */}
-          <div className="pt-4 border-t border-slate-900/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
             <div className="flex items-center gap-2">
               <Code2 className="w-4 h-4 text-orange-500" />
               <span className="font-semibold text-slate-400">Contata Solutions Hackathon 2026</span>
