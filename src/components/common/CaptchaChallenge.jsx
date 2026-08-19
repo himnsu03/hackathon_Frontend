@@ -98,9 +98,8 @@ export const CaptchaChallenge = ({ onCaptchaChange, error }) => {
     <div className="p-4 bg-slate-950/90 border border-slate-800 rounded-xl space-y-3 shadow-inner">
       <div className="flex items-center justify-between">
         <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 text-orange-400" /> Bot Protection Challenge <span className="text-rose-400">*</span>
+          <ShieldCheck className="w-4 h-4 text-orange-400" /> Captcha  <span className="text-rose-400">*</span>
         </label>
-        <span className="text-[10px] text-slate-500 font-mono">Case-Insensitive</span>
       </div>
 
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">

@@ -485,22 +485,6 @@ export const LandingPage = () => {
         </div>
 
       </section>
-
-      {/* Landing Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950/60 py-8 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <Code2 className="w-4 h-4 text-orange-500" />
-            <span className="font-semibold text-slate-400">Contata Solutions Hackathon 2026</span>
-          </div>
-          <div>© 2026 Contata Solutions. All rights reserved.</div>
-          <div className="flex items-center gap-4">
-            <Link to="/results" className="hover:text-slate-300 transition-colors">Leaderboard</Link>
-            <Link to="/login" className="hover:text-slate-300 transition-colors">Login</Link>
-            <Link to="/register" className="hover:text-slate-300 transition-colors">Register</Link>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

@@ -9,7 +9,9 @@ import { Input } from '../components/common/Input';
 import { Select } from '../components/common/Select';
 import { Button } from '../components/common/Button';
 import { CaptchaChallenge } from '../components/common/CaptchaChallenge';
-import { User, Mail, Phone, Lock, GraduationCap, Building2, Briefcase, CheckCircle2, ShieldAlert, X, Plus, Upload, FileText, Calendar } from 'lucide-react';
+import { PrivacyNoticeModal } from '../components/common/PrivacyNoticeModal';
+import { TermsModal } from '../components/common/TermsModal';
+import { User, Mail, Phone, Lock, GraduationCap, Building2, Briefcase, CheckCircle2, ShieldAlert, X, Plus, Upload, FileText, Calendar, Shield } from 'lucide-react';
 
 const DEFAULT_POPULAR_STACKS = ['React', 'Node.js', 'Python', 'Java', 'TypeScript', 'Go', 'Docker', 'AWS', 'Flutter', 'TailwindCSS'];
 
@@ -134,6 +136,9 @@ export const RegistrationPage = () => {
   const isRegistrationNotOpenYet = !regStartDate || regStartDate > now;
 
   const DRAFT_KEY = 'xathon_candidate_registration_draft';
+
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Form State initialized with draft if present (excluding passwords & captcha)
   const [formData, setFormData] = useState(() => {
@@ -356,7 +361,7 @@ export const RegistrationPage = () => {
       newErrors.captcha = 'Incorrect CAPTCHA code. Please check the code and try again.';
     }
 
-    if (!formData.agreeRules) newErrors.agreeRules = 'You must agree to the Hackathon Rules and Code of Conduct';
+    if (!formData.agreeRules) newErrors.agreeRules = 'You must consent to the collection and processing of personal data for hackathon registration';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -371,11 +376,15 @@ export const RegistrationPage = () => {
       return;
     }
 
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error('Please fix validation errors before submitting');
+      return;
+    }
 
     setLoading(true);
+    const cleanPhone = cleanIndianPhone(formData.phone);
+
     try {
-      const cleanPhone = cleanIndianPhone(formData.phone);
       const res = await authApi.register({
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
@@ -385,6 +394,7 @@ export const RegistrationPage = () => {
         college: formData.college.trim(),
         gradYear: formData.gradYear,
         experience: formData.experience,
+        agreeRules: formData.agreeRules,
         techStack,
       });
 
@@ -443,7 +453,7 @@ export const RegistrationPage = () => {
   return (
     <div className="min-h-[85vh] py-10 px-4 flex flex-col items-center justify-center">
       {/* Header */}
-      <div className="text-center max-w-lg mb-8">
+      <div className="text-center max-w-2xl mb-8">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-100 tracking-tight">
           Join <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">Xathon</span>
         </h1>
@@ -455,7 +465,7 @@ export const RegistrationPage = () => {
       <Card
         title="Registration Form"
         subtitle="Fill in your details below to register and participate in the hackathon"
-        className="max-w-xl w-full"
+        className="max-w-3xl lg:max-w-4xl w-full"
       >
         {isRegistrationNotOpenYet && (
           <div className="p-4 bg-amber-950/60 border border-amber-500/50 rounded-xl text-amber-300 flex items-start gap-3 mb-6">
@@ -719,7 +729,7 @@ export const RegistrationPage = () => {
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <FileText className="w-4 h-4 text-orange-400" /> Resume / CV Document (Optional)
+                    <FileText className="w-4 h-4 text-orange-400" /> Resume / CV Document
                   </span>
                   <span className="text-[10px] text-slate-500 font-mono">PDF, DOC, DOCX (Max 10MB)</span>
                 </label>
@@ -766,28 +776,36 @@ export const RegistrationPage = () => {
             error={errors.captcha}
           />
 
-          {/* Code of Conduct Checkbox */}
-          <div className="pt-2">
+          {/* Consent Checkbox (Mandatory) */}
+          <div className="space-y-1 pt-1">
             <label className="flex items-start gap-3 cursor-pointer group">
               <input
                 type="checkbox"
                 checked={formData.agreeRules}
                 onChange={(e) => setFormData({ ...formData, agreeRules: e.target.checked })}
-                className="mt-1 w-4 h-4 rounded bg-slate-900 border-slate-700 text-orange-600 focus:ring-orange-500 accent-orange-600"
+                className="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-orange-600 focus:ring-orange-500 accent-orange-600 shrink-0"
               />
               <span className="text-xs text-slate-300 leading-snug">
-                I agree to the hackathon rules, terms, and{' '}
+                I confirm that the information provided by me is accurate and consent to the collection and processing of my personal data for registration and participation in <strong>Contata Hackathon 2026</strong>, as described in the{' '}
                 <button
                   type="button"
-                  onClick={() => setShowRulesModal(true)}
-                  className="text-orange-400 underline hover:text-orange-300 font-semibold"
+                  onClick={() => setShowPrivacyModal(true)}
+                  className="text-orange-400 underline hover:text-orange-300 font-semibold cursor-pointer"
                 >
-                  Code of Conduct
+                  Privacy Notice
+                </button>{' '}
+                and{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="text-orange-400 underline hover:text-orange-300 font-semibold cursor-pointer"
+                >
+                  Terms & Conditions
                 </button>
-                .
+                . <span className="text-orange-400 font-bold">*</span>
               </span>
             </label>
-            {errors.agreeRules && <p className="text-xs text-rose-400 mt-1">• {errors.agreeRules}</p>}
+            {errors.agreeRules && <p className="text-xs text-rose-400 mt-1 pl-7">• {errors.agreeRules}</p>}
           </div>
 
           <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} disabled={isRegistrationNotOpenYet}>
@@ -803,29 +821,16 @@ export const RegistrationPage = () => {
         </form>
       </Card>
 
-      {/* Rules Modal */}
-      {showRulesModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <Card className="max-w-lg w-full max-h-[80vh] overflow-y-auto" title="Hackathon Rules & Code of Conduct">
-            <div className="space-y-4 text-xs text-slate-300 leading-relaxed">
-              <p>
-                <strong>1. Integrity:</strong> All participants must present original work created during the hackathon period. Pre-built complete codebases are strictly prohibited.
-              </p>
-              <p>
-                <strong>2. Respect:</strong> Maintain a respectful, inclusive environment free from harassment or discriminatory behavior.
-              </p>
-              <p>
-                <strong>3. Submission:</strong> Projects must be submitted before the countdown timer expires with a valid GitHub repository.
-              </p>
-            </div>
-            <div className="mt-6 flex justify-end">
-              <Button variant="primary" size="sm" onClick={() => setShowRulesModal(false)}>
-                I Understand
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
+      {/* Compliance Modals */}
+      <PrivacyNoticeModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
+
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+      />
     </div>
   );
 };

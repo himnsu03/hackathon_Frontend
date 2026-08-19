@@ -13,6 +13,10 @@ import { CandidateDashboardPage } from './pages/CandidateDashboardPage';
 import { SynopsisSubmissionPage } from './pages/SynopsisSubmissionPage';
 import { MainHackathonPage } from './pages/MainHackathonPage';
 import { ResultsPage } from './pages/ResultsPage';
+import { PrivacyNoticePage } from './pages/PrivacyNoticePage';
+import { TermsAndConditionsPage } from './pages/TermsAndConditionsPage';
+import { CookieConsentBanner } from './components/common/CookieConsentBanner';
+import { Footer } from './components/Footer';
 
 export function App() {
   return (
@@ -28,6 +32,8 @@ export function App() {
                 <Route path="/register" element={<RegistrationPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/results" element={<ResultsPage />} />
+                <Route path="/privacy" element={<PrivacyNoticePage />} />
+                <Route path="/terms" element={<TermsAndConditionsPage />} />
 
                 {/* Candidate Protected Routes */}
                 <Route
@@ -75,6 +81,8 @@ export function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
+            <Footer />
+            <CookieConsentBanner />
           </div>
         </Router>
       </ToastProvider>

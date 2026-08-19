@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { candidateApi } from '../services/candidateApi';
+import { httpClient } from '../services/httpClient';
 import { hackathonConfigService } from '../services/hackathonConfigService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -51,8 +52,25 @@ export const CandidateDashboardPage = () => {
     return null;
   });
   const [uploadingResume, setUploadingResume] = useState(false);
+  const [openingResume, setOpeningResume] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isReplacingResume, setIsReplacingResume] = useState(false);
+
+  const handleViewResume = async (resumeUrl) => {
+    if (!resumeUrl) return;
+    setOpeningResume(true);
+    try {
+      const res = await httpClient.get(resumeUrl, { responseType: 'blob' });
+      const blob = new Blob([res.data], { type: res.headers['content-type'] || 'application/pdf' });
+      const blobUrl = window.URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+    } catch (err) {
+      const fullUrl = resumeUrl.startsWith('http') ? resumeUrl : resumeUrl;
+      window.open(fullUrl, '_blank');
+    } finally {
+      setOpeningResume(false);
+    }
+  };
 
   const warningShownRef = React.useRef(false);
 
@@ -392,14 +410,19 @@ export const CandidateDashboardPage = () => {
                   </div>
                   <div className="flex items-center gap-2 pt-1">
                     {resumeInfo.url && (
-                      <a
-                        href={resumeInfo.url.startsWith('http') ? resumeInfo.url : resumeInfo.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 rounded-lg text-xs font-bold transition-colors"
+                      <button
+                        type="button"
+                        onClick={() => handleViewResume(resumeInfo.url)}
+                        disabled={openingResume}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                       >
-                        <FileText className="w-3.5 h-3.5" /> View Resume
-                      </a>
+                        {openingResume ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <FileText className="w-3.5 h-3.5" />
+                        )}
+                        {openingResume ? 'Opening...' : 'View Resume'}
+                      </button>
                     )}
                     <Button
                       variant="outline"
