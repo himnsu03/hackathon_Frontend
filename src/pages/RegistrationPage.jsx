@@ -133,18 +133,42 @@ export const RegistrationPage = () => {
   const regStartDate = hackathonConfig?.synopsisStartDate ? new Date(hackathonConfig.synopsisStartDate) : null;
   const isRegistrationNotOpenYet = !regStartDate || regStartDate > now;
 
-  // Form State
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
-    dateOfBirth: '',
-    gradYear: '2026',
-    college: '',
-    experience: '0-1 yrs',
-    agreeRules: false,
+  const DRAFT_KEY = 'xathon_candidate_registration_draft';
+
+  // Form State initialized with draft if present (excluding passwords & captcha)
+  const [formData, setFormData] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          fullName: parsed.fullName || '',
+          email: parsed.email || '',
+          password: '',
+          confirmPassword: '',
+          phone: parsed.phone || '',
+          dateOfBirth: parsed.dateOfBirth || '',
+          gradYear: parsed.gradYear || '2026',
+          college: parsed.college || '',
+          experience: parsed.experience || '0-1 yrs',
+          agreeRules: Boolean(parsed.agreeRules),
+        };
+      }
+    } catch (e) {
+      // Ignore JSON parse errors
+    }
+    return {
+      fullName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      phone: '',
+      dateOfBirth: '',
+      gradYear: '2026',
+      college: '',
+      experience: '0-1 yrs',
+      agreeRules: false,
+    };
   });
 
   const [allColleges, setAllColleges] = useState([]);
@@ -186,7 +210,7 @@ export const RegistrationPage = () => {
     }
   }, [formData.college, allColleges]);
 
-  // CAPTCHA State
+  // CAPTCHA State (never persisted)
   const [captchaInput, setCaptchaInput] = useState('');
   const [captchaCode, setCaptchaCode] = useState('');
 
@@ -195,13 +219,47 @@ export const RegistrationPage = () => {
     if (targetCode) setCaptchaCode(targetCode);
   };
 
-  const [techStack, setTechStack] = useState(['React', 'Node.js']);
+  const [techStack, setTechStack] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.techStack) && parsed.techStack.length > 0) {
+          return parsed.techStack;
+        }
+      }
+    } catch (e) {
+      // Ignore
+    }
+    return ['React', 'Node.js'];
+  });
+
   const [customTag, setCustomTag] = useState('');
   const [resumeFile, setResumeFile] = useState(null);
   const [resumeError, setResumeError] = useState('');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
+
+  // Auto-save non-sensitive form draft to sessionStorage
+  useEffect(() => {
+    try {
+      const draft = {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        dateOfBirth: formData.dateOfBirth,
+        gradYear: formData.gradYear,
+        college: formData.college,
+        experience: formData.experience,
+        agreeRules: formData.agreeRules,
+        techStack: techStack,
+      };
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }, [formData.fullName, formData.email, formData.phone, formData.dateOfBirth, formData.gradYear, formData.college, formData.experience, formData.agreeRules, techStack]);
 
   const handleAddTag = (tag) => {
     if (!tag || !tag.trim()) return;
@@ -352,9 +410,21 @@ export const RegistrationPage = () => {
           }
         }
 
+        // Clear draft from storage upon successful registration
+        try {
+          sessionStorage.removeItem(DRAFT_KEY);
+        } catch (e) {
+          // Ignore
+        }
+
         toast.success('Registration successful! Welcome to the Hackathon Dashboard.');
         navigate('/dashboard');
       } catch (err) {
+        try {
+          sessionStorage.removeItem(DRAFT_KEY);
+        } catch (e) {
+          // Ignore
+        }
         toast.info('Account created successfully! Please log in.');
         navigate('/login');
       }
