@@ -329,7 +329,14 @@ export const CandidateDashboardPage = () => {
                   : [
                     {
                       label: 'Candidate Registration',
-                      date: formatTimelineDate(globalConfig?.synopsisStartDate),
+                      date: globalConfig?.registrationStartDate ? formatTimelineDate(globalConfig.registrationStartDate) : 'Open Now',
+                      status: getStatus(globalConfig?.registrationStartDate, globalConfig?.synopsisStartDate),
+                    },
+                    {
+                      label: 'Synopsis Submission',
+                      date: globalConfig?.synopsisStartDate && globalConfig?.synopsisDeadline
+                        ? `${formatTimelineDate(globalConfig.synopsisStartDate)} - ${formatTimelineDate(globalConfig.synopsisDeadline)}`
+                        : formatTimelineDate(globalConfig?.synopsisStartDate),
                       status: getStatus(globalConfig?.synopsisStartDate, globalConfig?.synopsisDeadline),
                     },
                     {

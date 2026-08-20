@@ -132,8 +132,8 @@ export const RegistrationPage = () => {
   }, []);
 
   const now = new Date();
-  const regStartDate = hackathonConfig?.synopsisStartDate ? new Date(hackathonConfig.synopsisStartDate) : null;
-  const isRegistrationNotOpenYet = !regStartDate || regStartDate > now;
+  const regStartDate = hackathonConfig?.registrationStartDate ? new Date(hackathonConfig.registrationStartDate) : null;
+  const isRegistrationNotOpenYet = regStartDate && regStartDate > now;
 
   const DRAFT_KEY = 'xathon_candidate_registration_draft';
 

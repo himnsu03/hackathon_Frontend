@@ -121,8 +121,8 @@ export const LandingPage = () => {
   }, []);
 
   const now = new Date();
-  const regStartDate = config?.synopsisStartDate ? new Date(config.synopsisStartDate) : null;
-  const isRegistrationNotOpenYet = !regStartDate || regStartDate > now;
+  const regStartDate = config?.registrationStartDate ? new Date(config.registrationStartDate) : null;
+  const isRegistrationNotOpenYet = regStartDate && regStartDate > now;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100 selection:bg-orange-500 selection:text-white">
@@ -243,7 +243,7 @@ export const LandingPage = () => {
                       Registration Opens
                     </h3>
                     <p className="text-base sm:text-lg font-black text-sky-400 mb-1 drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]">
-                      {formatDate(config?.synopsisStartDate)}
+                      {formatDate(config?.registrationStartDate || config?.synopsisStartDate)}
                     </p>
                     <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
                       Open for all eligible candidate registrations and proposal submissions.

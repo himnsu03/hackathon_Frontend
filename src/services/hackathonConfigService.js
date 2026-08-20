@@ -3,6 +3,7 @@ import { httpClient } from './httpClient';
 const CONFIG_STORAGE_KEY = 'hackathon_global_config';
 
 const DEFAULT_CONFIG = {
+  registrationStartDate: null,
   synopsisStartDate: null,
   synopsisDeadline: null,
   hackathonStartDate: null,

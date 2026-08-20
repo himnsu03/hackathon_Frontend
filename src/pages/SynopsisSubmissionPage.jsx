@@ -106,7 +106,7 @@ export const SynopsisSubmissionPage = () => {
       const openDate = hackathonConfig?.synopsisStartDate
         ? new Date(hackathonConfig.synopsisStartDate).toLocaleString()
         : 'the scheduled time';
-      const msg = `Synopsis submissions have not opened yet. Registration opens on ${openDate}.`;
+      const msg = `Synopsis submissions have not opened yet. Synopsis submissions open on ${openDate}.`;
       setError(msg);
       toast.warning(msg);
       return;
